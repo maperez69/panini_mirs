@@ -4,40 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Miranda Panini Tracker 2026</title>
-    <!-- Librerías de React y Babel -->
+    <!-- React y Babel para ejecución en navegador -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS para diseño profesional -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Firebase SDKs para Sincronización en la Nube -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Exponer al scope global para que Babel pueda usarlos
+        window.FirebaseSDK = { initializeApp, getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, getFirestore, doc, setDoc, onSnapshot };
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+        }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes progress {
-            from { stroke-dasharray: 0 100; }
+        .progress-ring { 
+            animation: progress 1.2s ease-out forwards; 
         }
-        .progress-ring {
-            animation: progress 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-        .card-enter { animation: fadeInUp 0.4s ease-out forwards; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes progress { from { stroke-dasharray: 0 100; } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans">
+<body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
-        // Estructura oficial del álbum según el checklist cargado
+        // Configuración oficial del álbum: 48 selecciones + FWC + Coca-Cola
         const SECTION_LIST = [
             { code: "FWC", name: "FIFA World Cup", count: 20 },
             { code: "MEX", name: "México", count: 20 },
@@ -91,98 +96,110 @@
             { code: "CC", name: "Coca-Cola", count: 12 }
         ];
 
-        const APP_ID = "miranda-sticker-tracker-2026-v8";
+        const generateInitialStickers = () => {
+            const initial = [];
+            SECTION_LIST.forEach(section => {
+                for (let i = 1; i <= section.count; i++) {
+                    initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
+                }
+            });
+            return initial;
+        };
 
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
-                lucide.createIcons();
+                if (window.lucide) lucide.createIcons();
             }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
         const App = () => {
-            const [stickers, setStickers] = useState(() => {
-                const saved = localStorage.getItem(APP_ID);
-                if (saved) return JSON.parse(saved);
-                const initial = [];
-                SECTION_LIST.forEach(section => {
-                    for (let i = 1; i <= section.count; i++) {
-                        initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
-                    }
-                });
-                return initial;
-            });
-
+            const [stickers, setStickers] = useState(generateInitialStickers());
             const [activeTab, setActiveTab] = useState('dashboard');
             const [filter, setFilter] = useState('');
             const [selectedSection, setSelectedSection] = useState('MEX');
             const [notification, setNotification] = useState(null);
             const [shareMode, setShareMode] = useState('both');
+            const [user, setUser] = useState(null);
+            const [syncCode, setSyncCode] = useState(() => localStorage.getItem('panini_sync_code') || '');
+            
+            const dbRef = useRef(null);
 
-            // Persistencia automática
+            // Inicialización de Firebase
             useEffect(() => {
-                localStorage.setItem(APP_ID, JSON.stringify(stickers));
-            }, [stickers]);
+                const initFirebase = async () => {
+                    if (!window.FirebaseSDK) return;
+                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.FirebaseSDK;
+                    
+                    // Nota: En producción, estos valores se inyectan automáticamente en el entorno iFrame
+                    // Si lo corres localmente sin el entorno de Claude, fallará aquí a menos que pongas tu config.
+                    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "" };
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    dbRef.current = getFirestore(app);
 
-            // Estadísticas avanzadas
+                    const initAuth = async () => {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    };
+                    await initAuth();
+                    onAuthStateChanged(auth, setUser);
+                };
+                initFirebase();
+            }, []);
+
+            // Escuchar cambios en la nube
+            useEffect(() => {
+                if (!user || !syncCode || !dbRef.current) return;
+                const { doc, onSnapshot } = window.FirebaseSDK;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'miranda-tracker';
+                const docRef = doc(dbRef.current, 'artifacts', appId, 'public', 'data', 'user_stickers', syncCode.trim().toUpperCase());
+
+                const unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.stickers) setStickers(data.stickers);
+                    }
+                }, (err) => console.error("Sync error:", err));
+
+                localStorage.setItem('panini_sync_code', syncCode.trim().toUpperCase());
+                return () => unsubscribe();
+            }, [user, syncCode]);
+
+            // Guardar cambios en la nube
+            const saveToCloud = async (newStickers) => {
+                if (!user || !syncCode || !dbRef.current) return;
+                const { doc, setDoc } = window.FirebaseSDK;
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'miranda-tracker';
+                const docRef = doc(dbRef.current, 'artifacts', appId, 'public', 'data', 'user_stickers', syncCode.trim().toUpperCase());
+                try {
+                    await setDoc(docRef, { stickers: newStickers, lastUpdated: new Date() }, { merge: true });
+                } catch (e) {
+                    console.error("Save error:", e);
+                }
+            };
+
             const stats = useMemo(() => {
                 const total = stickers.length;
-                const ownedCount = stickers.filter(s => s.count > 0).length;
-                const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                const progress = (ownedCount / total) * 100;
-                
+                const owned = stickers.filter(s => s.count > 0).length;
+                const repeated = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+                const progress = (owned / total) * 100;
                 const sectionsData = SECTION_LIST.map(section => {
                     const group = stickers.filter(s => s.code === section.code);
                     const obtained = group.filter(s => s.count > 0).length;
-                    const isDone = obtained === section.count;
-                    return { ...section, obtained, isDone, percent: (obtained / section.count) * 100 };
+                    return { ...section, obtained, isDone: obtained === section.count };
                 });
-
                 const completedCount = sectionsData.filter(s => s.isDone).length;
-                const probNew = (1 - Math.pow(ownedCount / total || 0.001, 7)) * 100;
-
-                // Sugerencias: Países más cerca de completarse
-                const nearCompletion = [...sectionsData]
-                    .filter(s => s.percent > 0 && s.percent < 100)
-                    .sort((a, b) => b.percent - a.percent)
-                    .slice(0, 3);
-
-                return { total, ownedCount, repeatedCount, progress, probNew, completedCount, sectionsData, nearCompletion };
+                return { total, owned, repeated, progress, completedCount, sectionsData };
             }, [stickers]);
 
             const updateCount = (id, delta) => {
-                setStickers(prev => prev.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s));
-            };
-
-            // Copia de seguridad: Descargar JSON
-            const exportData = () => {
-                const dataStr = JSON.stringify(stickers);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                const exportFileDefaultName = 'backup_panini_miranda.json';
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-                setNotification("Respaldo descargado con éxito");
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // Restaurar: Cargar JSON
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedStickers = JSON.parse(e.target.result);
-                        setStickers(importedStickers);
-                        setNotification("¡Progreso restaurado!");
-                    } catch (err) {
-                        setNotification("Error al cargar el archivo");
-                    }
-                    setTimeout(() => setNotification(null), 3000);
-                };
-                reader.readAsText(file);
+                const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
+                setStickers(next);
+                if (syncCode) saveToCloud(next);
             };
 
             const copyToClipboard = (text) => {
@@ -190,39 +207,30 @@
                 el.value = text; document.body.appendChild(el);
                 el.select(); document.execCommand('copy');
                 document.body.removeChild(el);
-                setNotification("¡Lista copiada para WhatsApp!");
+                setNotification("¡Copiado con éxito!");
                 setTimeout(() => setNotification(null), 3000);
-            };
-
-            const generateShareText = () => {
-                const missing = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
-                const repeats = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
-                let text = `⚽ *ALBUM PANINI MIRANDA 2026* ⚽\n`;
-                if (shareMode === 'both' || shareMode === 'repeats') text += `\n✅ *TENGO REPETIDAS:* \n${repeats || 'Ninguna aún'}\n`;
-                if (shareMode === 'both' || shareMode === 'missing') text += `\n❌ *ME FALTAN:* \n${missing}\n`;
-                text += `\n_¡Cambiemos repetidas!_`;
-                return text;
             };
 
             const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
 
             return (
                 <div className="min-h-screen pb-24">
-                    {/* Header Premium */}
-                    <header className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white p-6 shadow-xl sticky top-0 z-50">
+                    <header className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white p-6 shadow-lg sticky top-0 z-50">
                         <div className="max-w-4xl mx-auto flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-yellow-400 rounded-lg">
-                                    <Icon name="trophy" className="text-blue-900" size={24} />
+                                    <Icon name="cloud" className={syncCode ? "text-blue-900" : "text-white/20"} size={24} />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl font-black tracking-tight leading-none">MIRANDA 2026</h1>
-                                    <p className="text-blue-200 text-[9px] font-bold uppercase tracking-widest mt-1">Sticker Tracker v8.0</p>
+                                    <h1 className="text-xl font-black italic tracking-tighter">MIRANDA 2026</h1>
+                                    <p className="text-blue-200 text-[9px] font-bold uppercase tracking-widest leading-none mt-1">
+                                        {syncCode ? `MODO CLOUD: ${syncCode}` : "MODO LOCAL (SIN SYNC)"}
+                                    </p>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <span className="text-3xl font-black italic">{stats.progress.toFixed(1)}%</span>
-                                <div className="w-24 bg-white/20 h-1.5 rounded-full mt-1 overflow-hidden">
+                                <div className="w-20 bg-white/20 h-1 rounded-full mt-1 overflow-hidden">
                                     <div className="bg-yellow-400 h-full transition-all duration-1000" style={{ width: `${stats.progress}%` }}></div>
                                 </div>
                             </div>
@@ -230,168 +238,121 @@
                     </header>
 
                     {notification && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-xs">
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-[10px] uppercase tracking-widest border border-white/20">
                             {notification}
                         </div>
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
                         
-                        {/* Tabs de Navegación */}
-                        <div className="flex bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border p-1 sticky top-28 z-40">
-                            {[
-                                { id: 'dashboard', label: 'Resumen', icon: 'trending-up' },
-                                { id: 'album', label: 'Álbum', icon: 'layout-grid' },
-                                { id: 'exchange', label: 'Compartir', icon: 'share-2' }
-                            ].map(tab => (
-                                <button 
-                                    key={tab.id} 
-                                    onClick={() => setActiveTab(tab.id)} 
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
-                                >
-                                    <Icon name={tab.icon} size={18} />
-                                    <span className="text-[10px] sm:text-xs font-bold uppercase">{tab.label}</span>
+                        {!syncCode && (
+                            <div className="bg-white p-6 rounded-3xl border-2 border-dashed border-blue-200 text-center space-y-4 shadow-sm animate-in fade-in">
+                                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+                                    <Icon name="link" className="text-blue-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-slate-800">Sincroniza el celular de Miranda</h3>
+                                    <p className="text-[10px] text-slate-400 max-w-[240px] mx-auto mt-1 uppercase font-bold tracking-widest leading-relaxed">Crea un código familiar para ver el progreso en todos lados</p>
+                                </div>
+                                <div className="flex gap-2 max-w-xs mx-auto">
+                                    <input id="syncInput" type="text" placeholder="EJ: FAMILIA2026" className="flex-1 px-4 py-2 border-2 border-slate-100 rounded-xl font-black uppercase text-sm outline-none focus:border-blue-500" />
+                                    <button onClick={() => setSyncCode(document.getElementById('syncInput').value)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-200 active:scale-95 transition-transform">Activar</button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border p-1.5 sticky top-28 z-40">
+                            {['dashboard', 'album', 'exchange'].map(tab => (
+                                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                    <Icon name={tab === 'dashboard' ? 'trending-up' : tab === 'album' ? 'layout-grid' : 'share-2'} />
+                                    <span className="text-[10px] uppercase font-black tracking-tighter">{tab === 'dashboard' ? 'Resumen' : tab === 'album' ? 'Álbum' : 'Compartir'}</span>
                                 </button>
                             ))}
                         </div>
 
-                        {/* DASHBOARD */}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6 animate-in fade-in zoom-in-95">
-                                {/* Resumen Visual */}
                                 <div className="bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row items-center gap-10">
-                                    <div className="relative w-48 h-48 flex items-center justify-center">
+                                    <div className="relative w-44 h-44 flex items-center justify-center group">
                                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                                             <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
                                             <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" strokeWidth="3.5" strokeDasharray={`${stats.progress}, 100`} className="progress-ring" strokeLinecap="round" />
                                         </svg>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-5xl font-black text-slate-800 tracking-tighter">{Math.round(stats.progress)}%</span>
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Completado</span>
+                                            <span className="text-4xl font-black text-slate-800 leading-none tracking-tighter">{Math.round(stats.progress)}%</span>
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Lleno</span>
                                         </div>
                                     </div>
-                                    <div className="flex-1 space-y-5 text-center md:text-left">
-                                        <div>
-                                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">¡Sigue así, Miranda!</h2>
-                                            <p className="text-slate-500 text-sm mt-1">Has llenado <strong>{stats.completedCount} de 50</strong> secciones totales.</p>
-                                        </div>
+                                    <div className="flex-1 space-y-4 text-center md:text-left">
+                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">¡Gran trabajo, Miranda!</h2>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center md:items-start">
-                                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stickers</span>
-                                                <span className="text-2xl font-black text-blue-700">{stats.ownedCount}</span>
+                                            <div className="p-4 bg-blue-50 rounded-3xl border border-blue-100 flex flex-col items-center md:items-start">
+                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stickers</p>
+                                                <p className="text-3xl font-black text-blue-700">{stats.owned}</p>
                                             </div>
-                                            <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex flex-col items-center md:items-start">
-                                                <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Repetidas</span>
-                                                <span className="text-2xl font-black text-orange-700">{stats.repeatedCount}</span>
+                                            <div className="p-4 bg-green-50 rounded-3xl border border-green-100 flex flex-col items-center md:items-start">
+                                                <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Países OK</p>
+                                                <p className="text-3xl font-black text-green-700">{stats.completedCount}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Recomendaciones y Logros */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2">
-                                            <Icon name="rocket" className="text-blue-500" /> Próximos a completar
-                                        </h4>
-                                        <div className="space-y-3">
-                                            {stats.nearCompletion.length > 0 ? stats.nearCompletion.map(s => (
-                                                <div key={s.code} className="flex items-center gap-3">
-                                                    <div className="w-10 text-[10px] font-black text-slate-400 uppercase">{s.code}</div>
-                                                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-blue-500 transition-all" style={{ width: `${s.percent}%` }}></div>
-                                                    </div>
-                                                    <div className="text-[10px] font-bold text-slate-600">{Math.round(s.percent)}%</div>
-                                                </div>
-                                            )) : <p className="text-xs text-slate-400 italic">Marca stickers para ver tu progreso aquí.</p>}
-                                        </div>
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                                    <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                        <Icon name="award" className="text-yellow-500" /> Logros por Selección
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {stats.sectionsData.filter(s => s.isDone).map(s => (
+                                            <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase border border-green-200">{s.code}</span>
+                                        ))}
+                                        {stats.completedCount === 0 && <p className="text-xs text-slate-400 italic">Marca láminas para ver tus logros aquí.</p>}
                                     </div>
-
-                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2">
-                                            <Icon name="award" className="text-green-500" /> Países OK ({stats.completedCount})
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-hide">
-                                            {stats.sectionsData.filter(s => s.isDone).map(s => (
-                                                <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase border border-green-200">
-                                                    {s.code}
-                                                </span>
-                                            ))}
-                                            {stats.completedCount === 0 && <p className="text-xs text-slate-400 italic">¡Ánimo! Pronto completarás tu primer país.</p>}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Backup y Ajustes */}
-                                <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-                                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                                        <div className="text-center md:text-left">
-                                            <h3 className="text-xl font-black mb-1">Copia de Seguridad</h3>
-                                            <p className="text-xs text-slate-400">Guarda un respaldo para no perder el progreso de Miranda.</p>
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <button onClick={exportData} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl text-xs font-bold transition-all flex items-center gap-2">
-                                                <Icon name="download" size={16}/> Guardar Archivo
-                                            </button>
-                                            <label className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2">
-                                                <Icon name="upload" size={16}/> Restaurar
-                                                <input type="file" className="hidden" accept=".json" onChange={importData} />
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <Icon name="database" size={120} className="absolute -right-10 -bottom-10 text-white/5 pointer-events-none" />
                                 </div>
                             </div>
                         )}
 
-                        {/* ALBUM VIEW */}
                         {activeTab === 'album' && (
-                            <div className="space-y-4 animate-in slide-in-from-right-10 fade-in">
+                            <div className="space-y-4 animate-in fade-in">
                                 <div className="bg-white p-5 rounded-3xl border shadow-sm space-y-4">
-                                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <div className="flex flex-col md:flex-row gap-3 items-end">
                                         <div className="flex-1 w-full">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 tracking-widest italic">País o Sección Actual</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 tracking-widest italic">Seleccionar Selección</label>
                                             <div className="relative">
-                                                <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm">
+                                                <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none cursor-pointer">
                                                     {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                                                 </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" size={20}/></div>
+                                                <Icon name="chevron-down" size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                             </div>
                                         </div>
-                                        <div className="w-full md:w-56">
-                                            <div className="relative">
-                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" size={18}/></div>
-                                                <input type="text" placeholder="Ej: MEX12" className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 text-sm" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
-                                            </div>
+                                        <div className="w-full md:w-56 relative">
+                                            <Icon name="search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input type="text" placeholder="MEX12" className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 text-sm" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
                                     <div className="flex justify-between items-center mb-8 px-2">
-                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic">
+                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
                                             <span className="bg-blue-600 text-white text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-widest">{currentSectionInfo.code}</span> {currentSectionInfo.name}
                                         </h3>
                                         {stats.sectionsData.find(s => s.code === selectedSection)?.isDone && (
-                                            <div className="flex items-center gap-1 text-green-600 font-black text-[9px] uppercase tracking-widest bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
+                                            <span className="flex items-center gap-1 text-green-600 font-black text-[9px] uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-200">
                                                 <Icon name="check-circle" size={12}/> Completado
-                                            </div>
+                                            </span>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-5">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                         {stickers.filter(s => filter ? s.id.includes(filter) : s.code === selectedSection).map(sticker => (
-                                            <div key={sticker.id} className={`relative p-5 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-40 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg card-enter group hover:scale-105`}>
+                                            <div key={sticker.id} className={`relative p-5 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-40 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 active:scale-95`}>
                                                 <span className={`text-xl font-black tracking-tighter ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
                                                 <div className="flex items-center gap-3">
-                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border shadow-sm text-red-500 active:scale-90 hover:bg-red-50 transition-colors"><Icon name="minus" size={18}/></button>
+                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border shadow-sm text-red-500 active:bg-red-50"><Icon name="minus" size={16}/></button>
                                                     <span className="font-black text-xl w-4 text-center">{sticker.count}</span>
-                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90 hover:bg-green-50 transition-colors"><Icon name="plus" size={18}/></button>
+                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:bg-green-50"><Icon name="plus" size={16}/></button>
                                                 </div>
-                                                {sticker.count > 1 && (
-                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white ring-4 ring-orange-100">
-                                                        x{sticker.count}
-                                                    </div>
-                                                )}
+                                                {sticker.count > 1 && <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-2.5 py-1.5 rounded-full shadow-xl border-2 border-white ring-4 ring-orange-50 animate-in zoom-in">x{sticker.count}</div>}
                                             </div>
                                         ))}
                                     </div>
@@ -399,40 +360,44 @@
                             </div>
                         )}
 
-                        {/* COMPARTE / EXCHANGE */}
                         {activeTab === 'exchange' && (
                             <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center animate-in fade-in slide-in-from-bottom-10">
                                 <div className="flex justify-center gap-4 mb-8">
                                     {['both', 'repeats', 'missing'].map(m => (
-                                        <button 
-                                            key={m} 
-                                            onClick={() => setShareMode(m)} 
-                                            className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}
-                                        >
+                                        <button key={m} onClick={() => setShareMode(m)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}>
                                             <Icon name={m === 'both' ? 'list' : m === 'repeats' ? 'refresh-ccw' : 'alert-circle'} />
                                             {m === 'both' ? 'Todo' : m === 'repeats' ? 'Repetidas' : 'Faltantes'}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="relative group">
-                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
-                                        {generateShareText()}
-                                    </div>
-                                    <div className="absolute top-4 right-4 bg-slate-800 text-slate-500 px-2 py-1 rounded text-[8px] uppercase font-bold tracking-widest">Previsualización</div>
+                                <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
+                                    {(function(){
+                                        const mList = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
+                                        const rList = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
+                                        let t = `⚽ *ALBUM MIRANDA 2026* ⚽\n`;
+                                        if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *TENGO REPETIDAS:* \n${rList || 'Ninguna'}\n`;
+                                        if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
+                                        t += `\n_¡Intercambiemos!_`;
+                                        return t;
+                                    })()}
                                 </div>
-                                <button onClick={() => copyToClipboard(generateShareText())} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
-                                    <Icon name="copy" size={24} className="group-hover:rotate-12 transition-transform" /> 
-                                    COPIAR PARA WHATSAPP
+                                <button onClick={() => copyToClipboard((function(){
+                                    const mList = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
+                                    const rList = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
+                                    let t = `⚽ *ALBUM MIRANDA 2026* ⚽\n`;
+                                    if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *TENGO REPETIDAS:* \n${rList || 'Ninguna'}\n`;
+                                    if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
+                                    t += `\n_¡Intercambiemos!_`;
+                                    return t;
+                                })())} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
+                                    <Icon name="copy" size={28} className="group-hover:rotate-12 transition-transform" /> COPIAR LISTA
                                 </button>
                             </div>
                         )}
                     </main>
 
                     <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50">
-                        <div className="flex justify-center items-center gap-2 mb-1">
-                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini System 2026</span>
-                        </div>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Cloud Sync v10.0</p>
                     </footer>
                 </div>
             );
