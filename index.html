@@ -1,0 +1,374 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Trophy, 
+  Share2, 
+  TrendingUp, 
+  Copy, 
+  Plus, 
+  Minus, 
+  Search, 
+  LayoutGrid, 
+  Info, 
+  ChevronDown, 
+  Flag,
+  RefreshCcw,
+  AlertCircle
+} from 'lucide-react';
+
+// --- CONFIGURACIÓN DE SECCIONES (SEGÚN CHECKLIST DE STICKERS) ---
+const SECTION_LIST = [
+  { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
+  { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
+  { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
+  { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
+  { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
+  { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
+  { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
+  { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
+  { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
+  { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
+  { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
+  { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
+  { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
+  { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
+  { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
+  { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
+  { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
+  { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
+  { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
+  { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
+  { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
+  { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
+  { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
+  { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
+  { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
+  { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
+  { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
+  { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
+  { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
+  { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
+  { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
+  { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
+  { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
+  { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
+  { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
+  { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
+  { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
+  { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
+  { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
+  { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
+  { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
+  { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
+  { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
+  { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
+  { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
+  { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
+  { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
+  { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
+  { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
+  { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
+];
+
+const APP_ID = "miranda-sticker-tracker-2026";
+
+const App = () => {
+  // --- Estado de láminas ---
+  const [stickers, setStickers] = useState(() => {
+    const saved = localStorage.getItem(APP_ID);
+    if (saved) return JSON.parse(saved);
+
+    const initial = [];
+    SECTION_LIST.forEach(section => {
+      for (let i = 1; i <= section.count; i++) {
+        initial.push({
+          id: `${section.code} ${i}`,
+          code: section.code,
+          num: i,
+          count: 0
+        });
+      }
+    });
+    return initial;
+  });
+
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [filter, setFilter] = useState('');
+  const [selectedSection, setSelectedSection] = useState('MEX');
+  const [notification, setNotification] = useState(null);
+  const [shareMode, setShareMode] = useState('both');
+
+  // Persistencia
+  useEffect(() => {
+    localStorage.setItem(APP_ID, JSON.stringify(stickers));
+  }, [stickers]);
+
+  // Cálculos
+  const stats = useMemo(() => {
+    const total = stickers.length;
+    const owned = stickers.filter(s => s.count > 0).length;
+    const repeated = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+    const progress = (owned / total) * 100;
+    
+    // Probabilidad en un sobre de 7 láminas
+    const ratioOwned = owned / total;
+    const probNew = (1 - Math.pow(ratioOwned, 7)) * 100;
+
+    return { total, owned, repeated, progress, probNew };
+  }, [stickers]);
+
+  // Handlers
+  const updateCount = (id, delta) => {
+    setStickers(prev => prev.map(s => {
+      if (s.id === id) {
+        return { ...s, count: Math.max(0, s.count + delta) };
+      }
+      return s;
+    }));
+  };
+
+  const copyToClipboard = (text) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    setNotification("¡Lista copiada!");
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const generateShareText = () => {
+    const missing = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
+    const repeats = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
+    
+    let text = `⚽ *PANINI MIRANDA 2026* ⚽\n`;
+    if (shareMode === 'both' || shareMode === 'repeats') {
+      text += `\n✅ *TENGO REPETIDAS:* \n${repeats || 'Ninguna aún'}\n`;
+    }
+    if (shareMode === 'both' || shareMode === 'missing') {
+      text += `\n❌ *ME FALTAN:* \n${missing}\n`;
+    }
+    text += `\n_¡Intercambiemos!_`;
+    return text;
+  };
+
+  const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 shadow-lg sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black flex items-center gap-2">
+              <Trophy className="text-yellow-400" size={28} /> MIRANDA 2026
+            </h1>
+            <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">Sticker Collection Tracker</p>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-black">{stats.progress.toFixed(1)}%</span>
+            <div className="w-20 bg-white/20 h-1.5 rounded-full mt-1">
+              <div className="bg-yellow-400 h-full rounded-full transition-all duration-700" style={{ width: `${stats.progress}%` }} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {notification && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold">
+          {notification}
+        </div>
+      )}
+
+      <main className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Navigation */}
+        <div className="flex bg-white rounded-2xl shadow-sm border p-1.5 sticky top-28 z-40">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+            { id: 'album', label: 'Mi Álbum', icon: LayoutGrid },
+            { id: 'exchange', label: 'Compartir', icon: Share2 }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+                activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              <tab.icon size={20} />
+              <span className="text-xs uppercase">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* DASHBOARD */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Únicas</p>
+                <h3 className="text-3xl font-black text-blue-700">{stats.owned}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Repetidas</p>
+                <h3 className="text-3xl font-black text-orange-600">{stats.repeated}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Faltan</p>
+                <h3 className="text-3xl font-black text-red-600">{stats.total - stats.owned}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Prob. Nueva</p>
+                <h3 className="text-3xl font-black text-green-600">{Math.round(stats.probNew)}%</h3>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-3xl border-2 ${stats.probNew > 30 ? 'bg-green-50 border-green-100 text-green-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
+              <h4 className="font-bold mb-1 flex items-center gap-2"><Info size={20}/> Análisis de Colección</h4>
+              <p className="text-sm">
+                {stats.probNew > 30 
+                  ? "¡Sigue comprando! Tienes una alta probabilidad de encontrar láminas nuevas en cada sobre."
+                  : "Es momento de frenar la compra de sobres y enfocarse en INTERCAMBIOS para completar el álbum."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ALBUM VIEW */}
+        {activeTab === 'album' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white p-5 rounded-3xl border shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Seleccionar Selección</label>
+                  <div className="relative">
+                    <select 
+                      value={selectedSection}
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500"
+                    >
+                      {SECTION_LIST.map(s => (
+                        <option key={s.code} value={s.code}>
+                          {s.flag} {s.code} - {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  </div>
+                </div>
+                <div className="w-full md:w-64">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Busca MEX 12..." 
+                      className="w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border shadow-sm">
+              <h3 className="text-2xl font-black mb-8 text-slate-800 flex items-center gap-3">
+                {currentSectionInfo.flag} {currentSectionInfo.name} ({currentSectionInfo.code})
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {stickers
+                  .filter(s => {
+                    if (filter) return s.id.toLowerCase().includes(filter.toLowerCase());
+                    return s.code === selectedSection;
+                  })
+                  .map(sticker => (
+                    <div 
+                      key={sticker.id}
+                      className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-36 ${
+                        sticker.count > 0 
+                          ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') 
+                          : 'bg-white border-slate-100 opacity-60'
+                      } shadow-lg`}
+                    >
+                      <span className={`text-lg font-black ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>
+                        {sticker.id}
+                      </span>
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => updateCount(sticker.id, -1)}
+                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-red-500 active:scale-90"
+                        ><Minus size={16} /></button>
+                        <span className="font-black text-lg w-6 text-center">{sticker.count}</span>
+                        <button 
+                          onClick={() => updateCount(sticker.id, 1)}
+                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90"
+                        ><Plus size={16} /></button>
+                      </div>
+
+                      {sticker.count > 1 && (
+                        <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white">
+                          REP x{sticker.count - 1}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* EXCHANGE */}
+        {activeTab === 'exchange' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="bg-white p-8 rounded-[40px] border shadow-sm text-center">
+              <div className="flex justify-center gap-4 mb-8">
+                {[
+                  { id: 'both', label: 'Todo', icon: LayoutGrid },
+                  { id: 'repeats', label: 'Repetidas', icon: RefreshCcw },
+                  { id: 'missing', label: 'Faltantes', icon: AlertCircle }
+                ].map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => setShareMode(mode.id)}
+                    className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-bold ${
+                      shareMode === mode.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-400'
+                    }`}
+                  >
+                    <mode.icon size={24} />
+                    <span className="text-[10px] uppercase tracking-widest">{mode.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <div className="bg-slate-900 text-green-400 p-8 rounded-3xl font-mono text-left text-xs mb-8 max-h-72 overflow-y-auto border-4 border-slate-800 leading-relaxed shadow-inner">
+                  {generateShareText()}
+                </div>
+                <div className="absolute top-4 right-4 bg-slate-800 text-slate-400 px-3 py-1 rounded-lg text-[10px] uppercase font-bold tracking-tighter">
+                  Previsualización
+                </div>
+              </div>
+
+              <button 
+                onClick={() => copyToClipboard(generateShareText())}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg"
+              >
+                <Copy size={28} /> COPIAR PARA WHATSAPP
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 text-center z-50">
+        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">
+          Panini Sticker Album 2026 • Miranda Strategy v4.0
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
