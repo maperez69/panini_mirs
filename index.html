@@ -17,71 +17,76 @@
         body { font-family: 'Inter', sans-serif; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes progress {
+            from { stroke-dasharray: 0 100; }
+        }
+        .progress-ring {
+            animation: progress 1s ease-out forwards;
+        }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 text-slate-900 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Configuración de secciones según tu checklist
         const SECTION_LIST = [
-            { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
-            { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
-            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
-            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
-            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
-            { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
-            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
-            { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
-            { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
-            { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
-            { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
-            { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
-            { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
-            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
-            { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
-            { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
-            { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
-            { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
-            { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
-            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
-            { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
-            { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
-            { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
-            { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
-            { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
-            { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
-            { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
-            { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
-            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
-            { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
-            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
-            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
-            { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
-            { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
-            { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
-            { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
-            { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
-            { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
-            { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
-            { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
-            { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
-            { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
-            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
-            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
-            { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
-            { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
-            { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
-            { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
-            { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
-            { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
+            { code: "FWC", name: "FIFA World Cup", count: 20 },
+            { code: "MEX", name: "México", count: 20 },
+            { code: "RSA", name: "Sudáfrica", count: 20 },
+            { code: "KOR", name: "Corea del Sur", count: 20 },
+            { code: "CZE", name: "Rep. Checa", count: 20 },
+            { code: "CAN", name: "Canadá", count: 20 },
+            { code: "BIH", name: "Bosnia & Herz.", count: 20 },
+            { code: "QAT", name: "Qatar", count: 20 },
+            { code: "SUI", name: "Suiza", count: 20 },
+            { code: "BRA", name: "Brasil", count: 20 },
+            { code: "MAR", name: "Marruecos", count: 20 },
+            { code: "HAI", name: "Haití", count: 20 },
+            { code: "SCO", name: "Escocia", count: 20 },
+            { code: "USA", name: "Estados Unidos", count: 20 },
+            { code: "PAR", name: "Paraguay", count: 20 },
+            { code: "AUS", name: "Australia", count: 20 },
+            { code: "TUR", name: "Turquía", count: 20 },
+            { code: "GER", name: "Alemania", count: 20 },
+            { code: "CUW", name: "Curazao", count: 20 },
+            { code: "CIV", name: "Costa de Marfil", count: 20 },
+            { code: "ECU", name: "Ecuador", count: 20 },
+            { code: "NED", name: "Países Bajos", count: 20 },
+            { code: "JPN", name: "Japón", count: 20 },
+            { code: "SWE", name: "Suecia", count: 20 },
+            { code: "TUN", name: "Túnez", count: 20 },
+            { code: "BEL", name: "Bélgica", count: 20 },
+            { code: "EGY", name: "Egipto", count: 20 },
+            { code: "IRN", name: "Irán", count: 20 },
+            { code: "NZL", name: "Nueva Zelanda", count: 20 },
+            { code: "ESP", name: "España", count: 20 },
+            { code: "CPV", name: "Cabo Verde", count: 20 },
+            { code: "KSA", name: "Arabia Saudita", count: 20 },
+            { code: "URU", name: "Uruguay", count: 20 },
+            { code: "FRA", name: "Francia", count: 20 },
+            { code: "SEN", name: "Senegal", count: 20 },
+            { code: "IRQ", name: "Irak", count: 20 },
+            { code: "NOR", name: "Noruega", count: 20 },
+            { code: "ARG", name: "Argentina", count: 20 },
+            { code: "ALG", name: "Argelia", count: 20 },
+            { code: "AUT", name: "Austria", count: 20 },
+            { code: "JOR", name: "Jordania", count: 20 },
+            { code: "POR", name: "Portugal", count: 20 },
+            { code: "COD", name: "R.D. Congo", count: 20 },
+            { code: "UZB", name: "Uzbekistán", count: 20 },
+            { code: "COL", name: "Colombia", count: 20 },
+            { code: "ENG", name: "Inglaterra", count: 20 },
+            { code: "CRO", name: "Croacia", count: 20 },
+            { code: "GHA", name: "Ghana", count: 20 },
+            { code: "PAN", name: "Panamá", count: 20 },
+            { code: "CC", name: "Coca-Cola", count: 12 }
         ];
 
         const APP_ID = "miranda-sticker-tracker-2026";
 
-        // Iconos usando Lucide
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
                 lucide.createIcons();
@@ -119,12 +124,22 @@
 
             const stats = useMemo(() => {
                 const total = stickers.length;
-                const owned = stickers.filter(s => s.count > 0).length;
-                const repeated = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                const progress = (owned / total) * 100;
-                const ratioOwned = owned / total;
+                const ownedCount = stickers.filter(s => s.count > 0).length;
+                const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+                const progress = (ownedCount / total) * 100;
+                
+                // Cálculo de secciones (países) completados
+                const completedSections = SECTION_LIST.map(section => {
+                    const sectionStickers = stickers.filter(s => s.code === section.code);
+                    const isDone = sectionStickers.every(s => s.count > 0);
+                    return { ...section, isDone };
+                });
+
+                const completedCount = completedSections.filter(s => s.isDone).length;
+                const ratioOwned = ownedCount / total;
                 const probNew = (1 - Math.pow(ratioOwned || 0.001, 7)) * 100;
-                return { total, owned, repeated, progress, probNew };
+
+                return { total, ownedCount, repeatedCount, progress, probNew, completedCount, completedSections };
             }, [stickers]);
 
             const updateCount = (id, delta) => {
@@ -159,62 +174,114 @@
                     <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 shadow-lg sticky top-0 z-50">
                         <div className="max-w-4xl mx-auto flex justify-between items-center">
                             <div>
-                                <h1 className="text-2xl font-black flex items-center gap-2">
+                                <h1 className="text-2xl font-black flex items-center gap-2 tracking-tight">
                                     <Icon name="trophy" className="text-yellow-400" size={28} /> MIRANDA 2026
                                 </h1>
-                                <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">Sticker Tracker</p>
+                                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Sticker Tracker Pro</p>
                             </div>
                             <div className="text-right">
                                 <span className="text-3xl font-black">{stats.progress.toFixed(1)}%</span>
-                                <div className="w-20 bg-white/20 h-1.5 rounded-full mt-1">
-                                    <div className="bg-yellow-400 h-full rounded-full transition-all duration-700" style={{ width: `${stats.progress}%` }}></div>
+                                <div className="w-20 bg-white/20 h-1.5 rounded-full mt-1 overflow-hidden">
+                                    <div className="bg-yellow-400 h-full transition-all duration-700" style={{ width: `${stats.progress}%` }}></div>
                                 </div>
                             </div>
                         </div>
                     </header>
 
                     {notification && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold">
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-sm">
                             {notification}
                         </div>
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
+                        {/* Tabs */}
                         <div className="flex bg-white rounded-2xl shadow-sm border p-1.5 sticky top-28 z-40">
-                            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>
-                                <Icon name="trending-up" /> <span className="text-xs font-bold uppercase">Dashboard</span>
+                            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                <Icon name="trending-up" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Resumen</span>
                             </button>
-                            <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'album' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>
-                                <Icon name="layout-grid" /> <span className="text-xs font-bold uppercase">Mi Álbum</span>
+                            <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'album' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                <Icon name="layout-grid" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Álbum</span>
                             </button>
-                            <button onClick={() => setActiveTab('exchange')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'exchange' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>
-                                <Icon name="share-2" /> <span className="text-xs font-bold uppercase">Compartir</span>
+                            <button onClick={() => setActiveTab('exchange')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'exchange' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                <Icon name="share-2" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Compartir</span>
                             </button>
                         </div>
 
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6 animate-in fade-in">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-white p-5 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Únicas</p>
-                                        <h3 className="text-3xl font-black text-blue-700">{stats.owned}</h3>
+                                {/* Gráfico Circular Principal */}
+                                <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row items-center gap-8">
+                                    <div className="relative w-48 h-48 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                                            <circle 
+                                                cx="18" cy="18" r="15.9" 
+                                                fill="none" stroke="#2563eb" 
+                                                strokeWidth="3" 
+                                                strokeDasharray={`${stats.progress}, 100`} 
+                                                className="progress-ring"
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-4xl font-black text-slate-800 leading-none">{Math.round(stats.progress)}%</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lleno</span>
+                                        </div>
                                     </div>
-                                    <div className="bg-white p-5 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Repetidas</p>
-                                        <h3 className="text-3xl font-black text-orange-600">{stats.repeated}</h3>
-                                    </div>
-                                    <div className="bg-white p-5 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Faltan</p>
-                                        <h3 className="text-3xl font-black text-red-600">{stats.total - stats.owned}</h3>
-                                    </div>
-                                    <div className="bg-white p-5 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Prob. Nueva</p>
-                                        <h3 className="text-3xl font-black text-green-600">{Math.round(stats.probNew)}%</h3>
+                                    <div className="flex-1 space-y-4 text-center md:text-left">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-800">¡Vas muy bien, Miranda!</h2>
+                                            <p className="text-slate-500 text-sm">Has completado <strong>{stats.completedCount} de {SECTION_LIST.length}</strong> secciones totales.</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stickers</p>
+                                                <p className="text-xl font-black text-blue-700">{stats.ownedCount}</p>
+                                            </div>
+                                            <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
+                                                <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Países OK</p>
+                                                <p className="text-xl font-black text-green-700">{stats.completedCount}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className={`p-6 rounded-3xl border-2 ${stats.probNew > 30 ? 'bg-green-50 border-green-100 text-green-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
-                                    <h4 className="font-bold mb-1 flex items-center gap-2"><Icon name="info" /> Análisis</h4>
-                                    <p className="text-sm">{stats.probNew > 30 ? "Fase de compra: Sigue abriendo sobres." : "Fase de cambio: Mejor intercambia repetidas."}</p>
+
+                                {/* Métricas Secundarias */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Repetidas</p>
+                                        <h3 className="text-3xl font-black text-orange-600">{stats.repeatedCount}</h3>
+                                        <p className="text-[10px] text-slate-400 mt-1 italic">Intercámbialas pronto</p>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Faltan</p>
+                                        <h3 className="text-3xl font-black text-red-600">{stats.total - stats.ownedCount}</h3>
+                                        <p className="text-[10px] text-slate-400 mt-1 italic">¡Ánimo, tú puedes!</p>
+                                    </div>
+                                </div>
+
+                                {/* Lista de Países Completados */}
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <Icon name="check-circle" className="text-green-500" /> Secciones Completadas
+                                    </h4>
+                                    {stats.completedCount > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {stats.completedSections.filter(s => s.isDone).map(s => (
+                                                <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black uppercase">
+                                                    {s.code}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">Aún no completas una sección completa. ¡Sigue pegando!</p>
+                                    )}
+                                </div>
+                                
+                                <div className={`p-6 rounded-3xl border-2 ${stats.probNew > 30 ? 'bg-indigo-50 border-indigo-100 text-indigo-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
+                                    <h4 className="font-bold mb-1 flex items-center gap-2"><Icon name="info" /> Consejo del Experto</h4>
+                                    <p className="text-sm">{stats.probNew > 30 ? "La probabilidad de encontrar nuevas es alta. ¡Sigue con los sobres!" : "Te faltan pocas. Es mejor ir al mercado de intercambios."}</p>
                                 </div>
                             </div>
                         )}
@@ -227,7 +294,7 @@
                                             <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 tracking-widest">Seleccionar Selección</label>
                                             <div className="relative">
                                                 <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all">
-                                                    {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.flag} {s.code} - {s.name}</option>)}
+                                                    {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                                                 </select>
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><Icon name="chevron-down" size={20} className="text-slate-400"/></div>
                                             </div>
@@ -242,17 +309,24 @@
                                 </div>
 
                                 <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                    <h3 className="text-2xl font-black mb-8 text-slate-800 flex items-center gap-3">
-                                        <span className="text-3xl">{currentSectionInfo.flag}</span> {currentSectionInfo.name}
-                                    </h3>
+                                    <div className="flex justify-between items-center mb-8">
+                                        <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                                            <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-lg uppercase tracking-widest">{currentSectionInfo.code}</span> {currentSectionInfo.name}
+                                        </h3>
+                                        {stats.completedSections.find(s => s.code === selectedSection)?.isDone && (
+                                            <span className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                                                <Icon name="check-circle" size={12}/> Completado
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                         {stickers.filter(s => filter ? s.id.includes(filter) : s.code === selectedSection).map(sticker => (
-                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-36 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg`}>
+                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-36 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 transition-transform`}>
                                                 <span className={`text-lg font-black ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-red-500 active:scale-90"><Icon name="minus" size={16}/></button>
+                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-red-500 active:scale-90 hover:bg-red-50 transition-colors"><Icon name="minus" size={16}/></button>
                                                     <span className="font-black text-lg w-6 text-center">{sticker.count}</span>
-                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90"><Icon name="plus" size={16}/></button>
+                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90 hover:bg-green-50 transition-colors"><Icon name="plus" size={16}/></button>
                                                 </div>
                                                 {sticker.count > 1 && <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white">REP x{sticker.count - 1}</div>}
                                             </div>
@@ -266,13 +340,13 @@
                             <div className="bg-white p-8 rounded-[40px] border shadow-sm text-center animate-in fade-in">
                                 <div className="flex justify-center gap-4 mb-8">
                                     {['both', 'repeats', 'missing'].map(m => (
-                                        <button key={m} onClick={() => setShareMode(m)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-bold ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400'}`}>
+                                        <button key={m} onClick={() => setShareMode(m)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-bold ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}>
                                             <Icon name={m === 'both' ? 'layout-grid' : m === 'repeats' ? 'refresh-ccw' : 'alert-circle'} />
-                                            <span className="text-[10px] uppercase">{m}</span>
+                                            <span className="text-[10px] uppercase tracking-tighter sm:tracking-normal">{m === 'both' ? 'Todo' : m === 'repeats' ? 'Tengo' : 'Faltan'}</span>
                                         </button>
                                     ))}
                                 </div>
-                                <div className="bg-slate-900 text-green-400 p-8 rounded-3xl font-mono text-left text-xs mb-8 max-h-72 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide">
+                                <div className="bg-slate-900 text-green-400 p-8 rounded-3xl font-mono text-left text-xs mb-8 max-h-72 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all">
                                     {generateShareText()}
                                 </div>
                                 <button onClick={() => copyToClipboard(generateShareText())} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg">
@@ -283,7 +357,7 @@
                     </main>
 
                     <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 text-center z-50">
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Panini Miranda 2026 v5.0</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Panini Miranda 2026 v7.0</p>
                     </footer>
                 </div>
             );
