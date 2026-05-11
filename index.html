@@ -2,19 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Miranda Panini Tracker 2026</title>
-    <!-- React y Babel para que el navegador entienda el código -->
+    <!-- Librerías de React y Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Tailwind CSS para el diseño -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
+    <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -22,7 +22,12 @@
             from { stroke-dasharray: 0 100; }
         }
         .progress-ring {
-            animation: progress 1s ease-out forwards;
+            animation: progress 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .card-enter { animation: fadeInUp 0.4s ease-out forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -32,6 +37,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // Estructura oficial del álbum según el checklist cargado
         const SECTION_LIST = [
             { code: "FWC", name: "FIFA World Cup", count: 20 },
             { code: "MEX", name: "México", count: 20 },
@@ -85,7 +91,7 @@
             { code: "CC", name: "Coca-Cola", count: 12 }
         ];
 
-        const APP_ID = "miranda-sticker-tracker-2026";
+        const APP_ID = "miranda-sticker-tracker-2026-v8";
 
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
@@ -101,12 +107,7 @@
                 const initial = [];
                 SECTION_LIST.forEach(section => {
                     for (let i = 1; i <= section.count; i++) {
-                        initial.push({
-                            id: `${section.code}${i}`,
-                            code: section.code,
-                            num: i,
-                            count: 0
-                        });
+                        initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
                     }
                 });
                 return initial;
@@ -118,217 +119,279 @@
             const [notification, setNotification] = useState(null);
             const [shareMode, setShareMode] = useState('both');
 
+            // Persistencia automática
             useEffect(() => {
                 localStorage.setItem(APP_ID, JSON.stringify(stickers));
             }, [stickers]);
 
+            // Estadísticas avanzadas
             const stats = useMemo(() => {
                 const total = stickers.length;
                 const ownedCount = stickers.filter(s => s.count > 0).length;
                 const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
                 const progress = (ownedCount / total) * 100;
                 
-                // Cálculo de secciones (países) completados
-                const completedSections = SECTION_LIST.map(section => {
-                    const sectionStickers = stickers.filter(s => s.code === section.code);
-                    const isDone = sectionStickers.every(s => s.count > 0);
-                    return { ...section, isDone };
+                const sectionsData = SECTION_LIST.map(section => {
+                    const group = stickers.filter(s => s.code === section.code);
+                    const obtained = group.filter(s => s.count > 0).length;
+                    const isDone = obtained === section.count;
+                    return { ...section, obtained, isDone, percent: (obtained / section.count) * 100 };
                 });
 
-                const completedCount = completedSections.filter(s => s.isDone).length;
-                const ratioOwned = ownedCount / total;
-                const probNew = (1 - Math.pow(ratioOwned || 0.001, 7)) * 100;
+                const completedCount = sectionsData.filter(s => s.isDone).length;
+                const probNew = (1 - Math.pow(ownedCount / total || 0.001, 7)) * 100;
 
-                return { total, ownedCount, repeatedCount, progress, probNew, completedCount, completedSections };
+                // Sugerencias: Países más cerca de completarse
+                const nearCompletion = [...sectionsData]
+                    .filter(s => s.percent > 0 && s.percent < 100)
+                    .sort((a, b) => b.percent - a.percent)
+                    .slice(0, 3);
+
+                return { total, ownedCount, repeatedCount, progress, probNew, completedCount, sectionsData, nearCompletion };
             }, [stickers]);
 
             const updateCount = (id, delta) => {
                 setStickers(prev => prev.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s));
             };
 
+            // Copia de seguridad: Descargar JSON
+            const exportData = () => {
+                const dataStr = JSON.stringify(stickers);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = 'backup_panini_miranda.json';
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                setNotification("Respaldo descargado con éxito");
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Restaurar: Cargar JSON
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedStickers = JSON.parse(e.target.result);
+                        setStickers(importedStickers);
+                        setNotification("¡Progreso restaurado!");
+                    } catch (err) {
+                        setNotification("Error al cargar el archivo");
+                    }
+                    setTimeout(() => setNotification(null), 3000);
+                };
+                reader.readAsText(file);
+            };
+
             const copyToClipboard = (text) => {
                 const el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
+                el.value = text; document.body.appendChild(el);
+                el.select(); document.execCommand('copy');
                 document.body.removeChild(el);
-                setNotification("¡Lista copiada!");
+                setNotification("¡Lista copiada para WhatsApp!");
                 setTimeout(() => setNotification(null), 3000);
             };
 
             const generateShareText = () => {
                 const missing = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
                 const repeats = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
-                let text = `⚽ *PANINI MIRANDA 2026* ⚽\n`;
+                let text = `⚽ *ALBUM PANINI MIRANDA 2026* ⚽\n`;
                 if (shareMode === 'both' || shareMode === 'repeats') text += `\n✅ *TENGO REPETIDAS:* \n${repeats || 'Ninguna aún'}\n`;
                 if (shareMode === 'both' || shareMode === 'missing') text += `\n❌ *ME FALTAN:* \n${missing}\n`;
-                text += `\n_¡Intercambiemos!_`;
+                text += `\n_¡Cambiemos repetidas!_`;
                 return text;
             };
 
             const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
 
             return (
-                <div className="min-h-screen pb-20">
-                    <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 shadow-lg sticky top-0 z-50">
+                <div className="min-h-screen pb-24">
+                    {/* Header Premium */}
+                    <header className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white p-6 shadow-xl sticky top-0 z-50">
                         <div className="max-w-4xl mx-auto flex justify-between items-center">
-                            <div>
-                                <h1 className="text-2xl font-black flex items-center gap-2 tracking-tight">
-                                    <Icon name="trophy" className="text-yellow-400" size={28} /> MIRANDA 2026
-                                </h1>
-                                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Sticker Tracker Pro</p>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-yellow-400 rounded-lg">
+                                    <Icon name="trophy" className="text-blue-900" size={24} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-black tracking-tight leading-none">MIRANDA 2026</h1>
+                                    <p className="text-blue-200 text-[9px] font-bold uppercase tracking-widest mt-1">Sticker Tracker v8.0</p>
+                                </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-3xl font-black">{stats.progress.toFixed(1)}%</span>
-                                <div className="w-20 bg-white/20 h-1.5 rounded-full mt-1 overflow-hidden">
-                                    <div className="bg-yellow-400 h-full transition-all duration-700" style={{ width: `${stats.progress}%` }}></div>
+                                <span className="text-3xl font-black italic">{stats.progress.toFixed(1)}%</span>
+                                <div className="w-24 bg-white/20 h-1.5 rounded-full mt-1 overflow-hidden">
+                                    <div className="bg-yellow-400 h-full transition-all duration-1000" style={{ width: `${stats.progress}%` }}></div>
                                 </div>
                             </div>
                         </div>
                     </header>
 
                     {notification && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-sm">
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-xs">
                             {notification}
                         </div>
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
-                        {/* Tabs */}
-                        <div className="flex bg-white rounded-2xl shadow-sm border p-1.5 sticky top-28 z-40">
-                            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                <Icon name="trending-up" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Resumen</span>
-                            </button>
-                            <button onClick={() => setActiveTab('album')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'album' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                <Icon name="layout-grid" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Álbum</span>
-                            </button>
-                            <button onClick={() => setActiveTab('exchange')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === 'exchange' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                <Icon name="share-2" /> <span className="text-[10px] sm:text-xs font-bold uppercase">Compartir</span>
-                            </button>
+                        
+                        {/* Tabs de Navegación */}
+                        <div className="flex bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border p-1 sticky top-28 z-40">
+                            {[
+                                { id: 'dashboard', label: 'Resumen', icon: 'trending-up' },
+                                { id: 'album', label: 'Álbum', icon: 'layout-grid' },
+                                { id: 'exchange', label: 'Compartir', icon: 'share-2' }
+                            ].map(tab => (
+                                <button 
+                                    key={tab.id} 
+                                    onClick={() => setActiveTab(tab.id)} 
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                                >
+                                    <Icon name={tab.icon} size={18} />
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase">{tab.label}</span>
+                                </button>
+                            ))}
                         </div>
 
+                        {/* DASHBOARD */}
                         {activeTab === 'dashboard' && (
-                            <div className="space-y-6 animate-in fade-in">
-                                {/* Gráfico Circular Principal */}
-                                <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row items-center gap-8">
+                            <div className="space-y-6 animate-in fade-in zoom-in-95">
+                                {/* Resumen Visual */}
+                                <div className="bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row items-center gap-10">
                                     <div className="relative w-48 h-48 flex items-center justify-center">
                                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3" />
-                                            <circle 
-                                                cx="18" cy="18" r="15.9" 
-                                                fill="none" stroke="#2563eb" 
-                                                strokeWidth="3" 
-                                                strokeDasharray={`${stats.progress}, 100`} 
-                                                className="progress-ring"
-                                                strokeLinecap="round"
-                                            />
+                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
+                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" strokeWidth="3.5" strokeDasharray={`${stats.progress}, 100`} className="progress-ring" strokeLinecap="round" />
                                         </svg>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-4xl font-black text-slate-800 leading-none">{Math.round(stats.progress)}%</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lleno</span>
+                                            <span className="text-5xl font-black text-slate-800 tracking-tighter">{Math.round(stats.progress)}%</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Completado</span>
                                         </div>
                                     </div>
-                                    <div className="flex-1 space-y-4 text-center md:text-left">
+                                    <div className="flex-1 space-y-5 text-center md:text-left">
                                         <div>
-                                            <h2 className="text-2xl font-black text-slate-800">¡Vas muy bien, Miranda!</h2>
-                                            <p className="text-slate-500 text-sm">Has completado <strong>{stats.completedCount} de {SECTION_LIST.length}</strong> secciones totales.</p>
+                                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">¡Sigue así, Miranda!</h2>
+                                            <p className="text-slate-500 text-sm mt-1">Has llenado <strong>{stats.completedCount} de 50</strong> secciones totales.</p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stickers</p>
-                                                <p className="text-xl font-black text-blue-700">{stats.ownedCount}</p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center md:items-start">
+                                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stickers</span>
+                                                <span className="text-2xl font-black text-blue-700">{stats.ownedCount}</span>
                                             </div>
-                                            <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
-                                                <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Países OK</p>
-                                                <p className="text-xl font-black text-green-700">{stats.completedCount}</p>
+                                            <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex flex-col items-center md:items-start">
+                                                <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Repetidas</span>
+                                                <span className="text-2xl font-black text-orange-700">{stats.repeatedCount}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Métricas Secundarias */}
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* Recomendaciones y Logros */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Repetidas</p>
-                                        <h3 className="text-3xl font-black text-orange-600">{stats.repeatedCount}</h3>
-                                        <p className="text-[10px] text-slate-400 mt-1 italic">Intercámbialas pronto</p>
+                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                            <Icon name="rocket" className="text-blue-500" /> Próximos a completar
+                                        </h4>
+                                        <div className="space-y-3">
+                                            {stats.nearCompletion.length > 0 ? stats.nearCompletion.map(s => (
+                                                <div key={s.code} className="flex items-center gap-3">
+                                                    <div className="w-10 text-[10px] font-black text-slate-400 uppercase">{s.code}</div>
+                                                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-blue-500 transition-all" style={{ width: `${s.percent}%` }}></div>
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-slate-600">{Math.round(s.percent)}%</div>
+                                                </div>
+                                            )) : <p className="text-xs text-slate-400 italic">Marca stickers para ver tu progreso aquí.</p>}
+                                        </div>
                                     </div>
-                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Faltan</p>
-                                        <h3 className="text-3xl font-black text-red-600">{stats.total - stats.ownedCount}</h3>
-                                        <p className="text-[10px] text-slate-400 mt-1 italic">¡Ánimo, tú puedes!</p>
-                                    </div>
-                                </div>
 
-                                {/* Lista de Países Completados */}
-                                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Icon name="check-circle" className="text-green-500" /> Secciones Completadas
-                                    </h4>
-                                    {stats.completedCount > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {stats.completedSections.filter(s => s.isDone).map(s => (
-                                                <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black uppercase">
+                                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                            <Icon name="award" className="text-green-500" /> Países OK ({stats.completedCount})
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-hide">
+                                            {stats.sectionsData.filter(s => s.isDone).map(s => (
+                                                <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase border border-green-200">
                                                     {s.code}
                                                 </span>
                                             ))}
+                                            {stats.completedCount === 0 && <p className="text-xs text-slate-400 italic">¡Ánimo! Pronto completarás tu primer país.</p>}
                                         </div>
-                                    ) : (
-                                        <p className="text-xs text-slate-400 italic">Aún no completas una sección completa. ¡Sigue pegando!</p>
-                                    )}
+                                    </div>
                                 </div>
-                                
-                                <div className={`p-6 rounded-3xl border-2 ${stats.probNew > 30 ? 'bg-indigo-50 border-indigo-100 text-indigo-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
-                                    <h4 className="font-bold mb-1 flex items-center gap-2"><Icon name="info" /> Consejo del Experto</h4>
-                                    <p className="text-sm">{stats.probNew > 30 ? "La probabilidad de encontrar nuevas es alta. ¡Sigue con los sobres!" : "Te faltan pocas. Es mejor ir al mercado de intercambios."}</p>
+
+                                {/* Backup y Ajustes */}
+                                <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                                        <div className="text-center md:text-left">
+                                            <h3 className="text-xl font-black mb-1">Copia de Seguridad</h3>
+                                            <p className="text-xs text-slate-400">Guarda un respaldo para no perder el progreso de Miranda.</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button onClick={exportData} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl text-xs font-bold transition-all flex items-center gap-2">
+                                                <Icon name="download" size={16}/> Guardar Archivo
+                                            </button>
+                                            <label className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2">
+                                                <Icon name="upload" size={16}/> Restaurar
+                                                <input type="file" className="hidden" accept=".json" onChange={importData} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <Icon name="database" size={120} className="absolute -right-10 -bottom-10 text-white/5 pointer-events-none" />
                                 </div>
                             </div>
                         )}
 
+                        {/* ALBUM VIEW */}
                         {activeTab === 'album' && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 animate-in slide-in-from-right-10 fade-in">
                                 <div className="bg-white p-5 rounded-3xl border shadow-sm space-y-4">
                                     <div className="flex flex-col md:flex-row gap-4 items-end">
                                         <div className="flex-1 w-full">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 tracking-widest">Seleccionar Selección</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 tracking-widest italic">País o Sección Actual</label>
                                             <div className="relative">
-                                                <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all">
+                                                <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm">
                                                     {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                                                 </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"><Icon name="chevron-down" size={20} className="text-slate-400"/></div>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" size={20}/></div>
                                             </div>
                                         </div>
-                                        <div className="w-full md:w-64">
+                                        <div className="w-full md:w-56">
                                             <div className="relative">
-                                                <div className="absolute left-4 top-1/2 -translate-y-1/2"><Icon name="search" size={18} className="text-slate-400"/></div>
-                                                <input type="text" placeholder="Ej: MEX12" className="w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" size={18}/></div>
+                                                <input type="text" placeholder="Ej: MEX12" className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 text-sm" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                                            <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-lg uppercase tracking-widest">{currentSectionInfo.code}</span> {currentSectionInfo.name}
+                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
+                                    <div className="flex justify-between items-center mb-8 px-2">
+                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic">
+                                            <span className="bg-blue-600 text-white text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-widest">{currentSectionInfo.code}</span> {currentSectionInfo.name}
                                         </h3>
-                                        {stats.completedSections.find(s => s.code === selectedSection)?.isDone && (
-                                            <span className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                                        {stats.sectionsData.find(s => s.code === selectedSection)?.isDone && (
+                                            <div className="flex items-center gap-1 text-green-600 font-black text-[9px] uppercase tracking-widest bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
                                                 <Icon name="check-circle" size={12}/> Completado
-                                            </span>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-5">
                                         {stickers.filter(s => filter ? s.id.includes(filter) : s.code === selectedSection).map(sticker => (
-                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-36 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 transition-transform`}>
-                                                <span className={`text-lg font-black ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-red-500 active:scale-90 hover:bg-red-50 transition-colors"><Icon name="minus" size={16}/></button>
-                                                    <span className="font-black text-lg w-6 text-center">{sticker.count}</span>
-                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90 hover:bg-green-50 transition-colors"><Icon name="plus" size={16}/></button>
+                                            <div key={sticker.id} className={`relative p-5 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-40 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') : 'bg-white border-slate-100 opacity-60'} shadow-lg card-enter group hover:scale-105`}>
+                                                <span className={`text-xl font-black tracking-tighter ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border shadow-sm text-red-500 active:scale-90 hover:bg-red-50 transition-colors"><Icon name="minus" size={18}/></button>
+                                                    <span className="font-black text-xl w-4 text-center">{sticker.count}</span>
+                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90 hover:bg-green-50 transition-colors"><Icon name="plus" size={18}/></button>
                                                 </div>
-                                                {sticker.count > 1 && <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white">REP x{sticker.count - 1}</div>}
+                                                {sticker.count > 1 && (
+                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white ring-4 ring-orange-100">
+                                                        x{sticker.count}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -336,28 +399,40 @@
                             </div>
                         )}
 
+                        {/* COMPARTE / EXCHANGE */}
                         {activeTab === 'exchange' && (
-                            <div className="bg-white p-8 rounded-[40px] border shadow-sm text-center animate-in fade-in">
+                            <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center animate-in fade-in slide-in-from-bottom-10">
                                 <div className="flex justify-center gap-4 mb-8">
                                     {['both', 'repeats', 'missing'].map(m => (
-                                        <button key={m} onClick={() => setShareMode(m)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-bold ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}>
-                                            <Icon name={m === 'both' ? 'layout-grid' : m === 'repeats' ? 'refresh-ccw' : 'alert-circle'} />
-                                            <span className="text-[10px] uppercase tracking-tighter sm:tracking-normal">{m === 'both' ? 'Todo' : m === 'repeats' ? 'Tengo' : 'Faltan'}</span>
+                                        <button 
+                                            key={m} 
+                                            onClick={() => setShareMode(m)} 
+                                            className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}
+                                        >
+                                            <Icon name={m === 'both' ? 'list' : m === 'repeats' ? 'refresh-ccw' : 'alert-circle'} />
+                                            {m === 'both' ? 'Todo' : m === 'repeats' ? 'Repetidas' : 'Faltantes'}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="bg-slate-900 text-green-400 p-8 rounded-3xl font-mono text-left text-xs mb-8 max-h-72 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all">
-                                    {generateShareText()}
+                                <div className="relative group">
+                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
+                                        {generateShareText()}
+                                    </div>
+                                    <div className="absolute top-4 right-4 bg-slate-800 text-slate-500 px-2 py-1 rounded text-[8px] uppercase font-bold tracking-widest">Previsualización</div>
                                 </div>
-                                <button onClick={() => copyToClipboard(generateShareText())} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg">
-                                    <Icon name="copy" size={28} /> COPIAR WHATSAPP
+                                <button onClick={() => copyToClipboard(generateShareText())} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
+                                    <Icon name="copy" size={24} className="group-hover:rotate-12 transition-transform" /> 
+                                    COPIAR PARA WHATSAPP
                                 </button>
                             </div>
                         )}
                     </main>
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 text-center z-50">
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Panini Miranda 2026 v7.0</p>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50">
+                        <div className="flex justify-center items-center gap-2 mb-1">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini System 2026</span>
+                        </div>
                     </footer>
                 </div>
             );
