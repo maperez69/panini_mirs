@@ -38,7 +38,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (Cargada desde tu imagen)
+        // CONFIGURACIÓN DE TU FIREBASE PERSONAL
         const CONFIG_PERSONAL_FIREBASE = {
             apiKey: "AIzaSyCpxBz20qqF6Xus6iYqJY_Vw5t7L5suiwg",
             authDomain: "pani-i2026.firebaseapp.com",
@@ -61,56 +61,56 @@
         };
 
         const SECTION_LIST = [
-            { code: "FWC", name: "FIFA World Cup", count: 20 },
-            { code: "MEX", name: "México", count: 20 },
-            { code: "RSA", name: "Sudáfrica", count: 20 },
-            { code: "KOR", name: "Corea del Sur", count: 20 },
-            { code: "CZE", name: "Rep. Checa", count: 20 },
-            { code: "CAN", name: "Canadá", count: 20 },
-            { code: "BIH", name: "Bosnia & Herz.", count: 20 },
-            { code: "QAT", name: "Qatar", count: 20 },
-            { code: "SUI", name: "Suiza", count: 20 },
-            { code: "BRA", name: "Brasil", count: 20 },
-            { code: "MAR", name: "Marruecos", count: 20 },
-            { code: "HAI", name: "Haití", count: 20 },
-            { code: "SCO", name: "Escocia", count: 20 },
-            { code: "USA", name: "Estados Unidos", count: 20 },
-            { code: "PAR", name: "Paraguay", count: 20 },
-            { code: "AUS", name: "Australia", count: 20 },
-            { code: "TUR", name: "Turquía", count: 20 },
-            { code: "GER", name: "Alemania", count: 20 },
-            { code: "CUW", name: "Curazao", count: 20 },
-            { code: "CIV", name: "Costa de Marfil", count: 20 },
-            { code: "ECU", name: "Ecuador", count: 20 },
-            { code: "NED", name: "Países Bajos", count: 20 },
-            { code: "JPN", name: "Japón", count: 20 },
-            { code: "SWE", name: "Suecia", count: 20 },
-            { code: "TUN", name: "Túnez", count: 20 },
-            { code: "BEL", name: "Bélgica", count: 20 },
-            { code: "EGY", name: "Egipto", count: 20 },
-            { code: "IRN", name: "Irán", count: 20 },
-            { code: "NZL", name: "Nueva Zelanda", count: 20 },
-            { code: "ESP", name: "España", count: 20 },
-            { code: "CPV", name: "Cabo Verde", count: 20 },
-            { code: "KSA", name: "Arabia Saudita", count: 20 },
-            { code: "URU", name: "Uruguay", count: 20 },
-            { code: "FRA", name: "Francia", count: 20 },
-            { code: "SEN", name: "Senegal", count: 20 },
-            { code: "IRQ", name: "Irak", count: 20 },
-            { code: "NOR", name: "Noruega", count: 20 },
-            { code: "ARG", name: "Argentina", count: 20 },
-            { code: "ALG", name: "Argelia", count: 20 },
-            { code: "AUT", name: "Austria", count: 20 },
-            { code: "JOR", name: "Jordania", count: 20 },
-            { code: "POR", name: "Portugal", count: 20 },
-            { code: "COD", name: "R.D. Congo", count: 20 },
-            { code: "UZB", name: "Uzbekistán", count: 20 },
-            { code: "COL", name: "Colombia", count: 20 },
-            { code: "ENG", name: "Inglaterra", count: 20 },
-            { code: "CRO", name: "Croacia", count: 20 },
-            { code: "GHA", name: "Ghana", count: 20 },
-            { code: "PAN", name: "Panamá", count: 20 },
-            { code: "CC", name: "Coca-Cola", count: 12 }
+            { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
+            { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
+            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
+            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
+            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
+            { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
+            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
+            { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
+            { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
+            { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
+            { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
+            { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
+            { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
+            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
+            { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
+            { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
+            { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
+            { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
+            { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
+            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
+            { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
+            { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
+            { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
+            { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
+            { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
+            { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
+            { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
+            { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
+            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
+            { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
+            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
+            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
+            { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
+            { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
+            { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
+            { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
+            { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
+            { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
+            { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
+            { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
+            { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
+            { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
+            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
+            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
+            { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
+            { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
+            { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
+            { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
+            { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
+            { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
         ];
 
         const APP_ID = "miranda-tracker-v10-prod";
@@ -142,11 +142,19 @@
             const [notification, setNotification] = useState(null);
             const [shareMode, setShareMode] = useState('both');
             const [showSettings, setShowSettings] = useState(false);
+            const [dashboardFilter, setDashboardFilter] = useState('pending'); // 'all', 'pending', 'done'
+            const [albumSubFilter, setAlbumSubFilter] = useState('all'); // 'all', 'missing', 'repeated'
 
             // Sincronización en la Nube
             const [syncCode, setSyncCode] = useState(() => localStorage.getItem('panini_sync_code') || '');
+            const [collectorName, setCollectorName] = useState(() => localStorage.getItem('panini_collector_name') || '');
             const [cloudStatus, setCloudStatus] = useState('local'); // 'local', 'syncing', 'error'
             const [logs, setLogs] = useState(["Iniciando aplicación..."]);
+
+            // Comparador (Matchmaker)
+            const [friendCode, setFriendCode] = useState('');
+            const [friendStickers, setFriendStickers] = useState(null);
+            const [friendName, setFriendName] = useState('');
 
             const dbInstance = useRef(null);
             const unsubscribeFirestore = useRef(null);
@@ -155,12 +163,24 @@
                 setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
 
+            // Deducir el nombre dinámico del coleccionista
+            const displayName = useMemo(() => {
+                if (collectorName) return collectorName;
+                if (syncCode) {
+                    const cleanCode = syncCode.trim().toUpperCase();
+                    if (cleanCode.startsWith("MATEO")) return "Mateo";
+                    if (cleanCode.startsWith("MIRANDA")) return "Miranda";
+                    return cleanCode;
+                }
+                return "Coleccionista";
+            }, [collectorName, syncCode]);
+
             // Guardar localmente siempre (Fail-safe)
             useEffect(() => {
                 localStorage.setItem(APP_ID, JSON.stringify(stickers));
             }, [stickers]);
 
-            // Inicialización de Firebase Compat (Estable en iPads)
+            // Inicialización de Firebase Compat
             useEffect(() => {
                 const initFirebase = () => {
                     addLog("Conectando con base de datos...");
@@ -171,14 +191,13 @@
                             return;
                         }
 
-                        // Inicializar el SDK global
                         if (window.firebase.apps.length === 0) {
                             window.firebase.initializeApp(CONFIG_PERSONAL_FIREBASE);
                         }
                         
                         dbInstance.current = window.firebase.firestore();
                         setCloudStatus('syncing');
-                        addLog("Conectado con Firebase (Compat).");
+                        addLog("Conectado con Firebase.");
                     } catch (err) {
                         console.error("Fallo de conexión a Firebase:", err);
                         setCloudStatus('error');
@@ -195,7 +214,6 @@
                 addLog(`Buscando canal: ${syncCode}...`);
                 const appId = "miranda-tracker-app";
                 
-                // Referencia estructurada clásica de Firestore Compat
                 const docRef = dbInstance.current
                     .collection('artifacts')
                     .doc(appId)
@@ -210,8 +228,9 @@
                 unsubscribeFirestore.current = docRef.onSnapshot((docSnap) => {
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        if (data && data.stickers) {
-                            setStickers(data.stickers);
+                        if (data) {
+                            if (data.stickers) setStickers(data.stickers);
+                            if (data.collectorName) setCollectorName(data.collectorName);
                             addLog("¡Datos sincronizados!");
                             setCloudStatus('syncing');
                         }
@@ -232,7 +251,7 @@
             }, [syncCode]);
 
             // Subir datos actualizados a la nube (Escritura)
-            const pushToCloud = async (newStickers) => {
+            const pushToCloud = async (newStickers, newName = collectorName) => {
                 if (!syncCode || !dbInstance.current) return;
                 
                 const appId = "miranda-tracker-app";
@@ -245,7 +264,11 @@
                     .doc(syncCode.trim().toUpperCase());
                 
                 try {
-                    await docRef.set({ stickers: newStickers, lastUpdated: new Date() }, { merge: true });
+                    await docRef.set({ 
+                        stickers: newStickers, 
+                        collectorName: newName,
+                        lastUpdated: new Date() 
+                    }, { merge: true });
                     addLog("Cambio guardado en la nube.");
                 } catch (e) {
                     console.error("Fallo al escribir en la nube:", e);
@@ -262,11 +285,26 @@
                 const sectionsData = SECTION_LIST.map(section => {
                     const group = stickers.filter(s => s.code === section.code);
                     const obtained = group.filter(s => s.count > 0).length;
-                    return { ...section, obtained, isDone: obtained === section.count, percent: (obtained / section.count) * 100 };
+                    const missing = section.count - obtained;
+                    const percent = (obtained / section.count) * 100;
+                    const repeated = group.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+                    return { 
+                        ...section, 
+                        obtained, 
+                        missing,
+                        percent,
+                        repeated,
+                        isDone: obtained === section.count 
+                    };
                 });
 
                 const completedCount = sectionsData.filter(s => s.isDone).length;
-                return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData };
+
+                // Cálculo de Estrategia de Compra
+                const ratioOwned = ownedCount / total;
+                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100; // Probabilidad en un sobre de 5 láminas
+
+                return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
             }, [stickers]);
 
             const updateCount = (id, delta) => {
@@ -275,10 +313,73 @@
                 if (syncCode) pushToCloud(next);
             };
 
+            const handleSaveConfig = () => {
+                localStorage.setItem('panini_collector_name', collectorName);
+                if (syncCode) pushToCloud(stickers, collectorName);
+                setShowSettings(false);
+                setNotification("Ajustes sincronizados");
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Buscar datos de un amigo para comparar (Matchmaker)
+            const checkFriendSync = async () => {
+                if (!dbInstance.current || !friendCode) return;
+                const cleanFriendCode = friendCode.trim().toUpperCase();
+                addLog(`Buscando datos de: ${cleanFriendCode}...`);
+                
+                const appId = "miranda-tracker-app";
+                const docRef = dbInstance.current
+                    .collection('artifacts')
+                    .doc(appId)
+                    .collection('public')
+                    .doc('data')
+                    .collection('user_stickers')
+                    .doc(cleanFriendCode);
+
+                try {
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        if (data && data.stickers) {
+                            setFriendStickers(data.stickers);
+                            setFriendName(data.collectorName || cleanFriendCode);
+                            setNotification(`¡Comparando con ${data.collectorName || cleanFriendCode}!`);
+                            addLog(`Conexión exitosa con ${cleanFriendCode}.`);
+                        }
+                    } else {
+                        setNotification("Código de amigo no encontrado.");
+                        setFriendStickers(null);
+                    }
+                } catch (err) {
+                    console.error("Error matching friend:", err);
+                    addLog("Error al buscar amigo.");
+                }
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Cálculo cruzado de intercambios (Matchmaker local)
+            const exchangeAnalysis = useMemo(() => {
+                if (!friendStickers) return null;
+
+                // Estampas que yo tengo repetidas (count > 1) y a mi amigo le faltan (count === 0)
+                const iCanGive = stickers.filter(mySticker => {
+                    const friendSticker = friendStickers.find(fs => fs.id === mySticker.id);
+                    return mySticker.count > 1 && friendSticker && friendSticker.count === 0;
+                }).map(s => s.id);
+
+                // Estampas que mi amigo tiene repetidas (count > 1) y a mí me faltan (count === 0)
+                const friendCanGive = friendStickers.filter(friendSticker => {
+                    const mySticker = stickers.find(ms => ms.id === friendSticker.id);
+                    return friendSticker.count > 1 && mySticker && mySticker.count === 0;
+                }).map(s => s.id);
+
+                return { iCanGive, friendCanGive };
+            }, [stickers, friendStickers]);
+
             const generateShareText = () => {
                 const mList = stickers.filter(s => s.count === 0).map(s => PLAYER_DATABASE[s.id] ? `${s.id}(${PLAYER_DATABASE[s.id]})` : s.id).join(', ');
                 const rList = stickers.filter(s => s.count > 1).map(s => PLAYER_DATABASE[s.id] ? `${s.id}(${PLAYER_DATABASE[s.id]})` : s.id).join(', ');
-                let t = "⚽ *ALBUM PANINI MIRANDA 2026* ⚽\n";
+                let t = `⚽ *ALBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
                 if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${rList || 'Ninguna'}\n`;
                 if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
                 return t + "\n_¡Intercambiemos!_";
@@ -293,16 +394,61 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
-            const displayedStickers = useMemo(() => {
-                if (!filter) {
-                    return stickers.filter(s => s.code === selectedSection);
-                }
-                const search = filter.toUpperCase();
-                return stickers.filter(s => {
-                    const pName = (PLAYER_DATABASE[s.id] || "").toUpperCase();
-                    return s.id.includes(search) || pName.includes(search);
+            const exportData = () => {
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(JSON.stringify(stickers));
+                const link = document.createElement('a');
+                link.setAttribute('href', dataUri);
+                link.setAttribute('download', `${syncCode || 'resguardo'}_panini_backup.json`);
+                link.click();
+                setNotification("¡Copia de seguridad guardada!");
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        setStickers(parsed);
+                        if (syncCode) pushToCloud(parsed);
+                        setNotification("¡Progreso restaurado!");
+                    } catch (err) {
+                        setNotification("Error al leer el archivo.");
+                    }
+                    setTimeout(() => setNotification(null), 3000);
+                };
+                reader.readAsText(file);
+            };
+
+            // Filtrado de las selecciones en el Dashboard
+            const filteredDashboardSections = useMemo(() => {
+                return stats.sectionsData.filter(s => {
+                    if (dashboardFilter === 'pending') return !s.isDone;
+                    if (dashboardFilter === 'done') return s.isDone;
+                    return true;
                 });
-            }, [stickers, filter, selectedSection]);
+            }, [stats.sectionsData, dashboardFilter]);
+
+            // Filtrado de estampas en el Álbum con subfiltros inteligentes
+            const displayedStickers = useMemo(() => {
+                let list = stickers;
+                if (!filter) {
+                    list = stickers.filter(s => s.code === selectedSection);
+                } else {
+                    const search = filter.toUpperCase();
+                    list = stickers.filter(s => {
+                        const pName = (PLAYER_DATABASE[s.id] || "").toUpperCase();
+                        return s.id.includes(search) || pName.includes(search);
+                    });
+                }
+
+                // Aplicar filtros adicionales de álbum
+                if (albumSubFilter === 'missing') return list.filter(s => s.count === 0);
+                if (albumSubFilter === 'repeated') return list.filter(s => s.count > 1);
+                return list;
+            }, [stickers, filter, selectedSection, albumSubFilter]);
 
             const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
 
@@ -314,12 +460,12 @@
                             <div className="flex items-center gap-3">
                                 <button onClick={() => setShowSettings(true)} className="p-2 bg-white/10 hover:bg-white/20 rounded-lg shadow-inner transition-all flex items-center gap-2">
                                     <Icon name="cloud" className={cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400 animate-pulse'} size={24} />
-                                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Conectar Nube</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Ajustes</span>
                                 </button>
                                 <div>
-                                    <h1 className="text-xl font-black italic tracking-tighter">MIRANDA 2026</h1>
+                                    <h1 className="text-xl font-black italic tracking-tighter">ÁLBUM DE {displayName.toUpperCase()}</h1>
                                     <p className="text-blue-200 text-[8px] font-bold uppercase tracking-widest leading-none">
-                                        {syncCode ? `Código: ${syncCode}` : "SÓLO DISPOSITIVO"}
+                                        {syncCode ? `Canal Nube: ${syncCode}` : "SÓLO DISPOSITIVO"}
                                     </p>
                                 </div>
                             </div>
@@ -361,7 +507,7 @@
                                         <div className="absolute inset-0 flex items-center justify-center"><span className="text-4xl font-black text-slate-800 leading-none">{Math.round(stats.progress)}%</span></div>
                                     </div>
                                     <div className="flex-1 space-y-4 text-center md:text-left">
-                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">¡Vamos Miranda!</h2>
+                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">¡Vamos {displayName}!</h2>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="p-4 bg-blue-50 rounded-3xl border border-blue-100 flex flex-col items-center md:items-start">
                                                 <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Stickers</p>
@@ -375,17 +521,115 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-3xl border shadow-sm text-center">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-slate-500">Repetidas totales</h4>
-                                    <p className="text-3xl font-black text-orange-600">{stats.repeatedCount}</p>
-                                    <p className="text-[9px] text-slate-400 uppercase font-bold mt-1 tracking-widest italic">Para cambiar con amigos</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="bg-white p-6 rounded-3xl border shadow-sm text-center flex flex-col justify-center">
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-slate-500">Repetidas totales</h4>
+                                        <p className="text-3xl font-black text-orange-600">{stats.repeatedCount}</p>
+                                        <p className="text-[9px] text-slate-400 uppercase font-bold mt-1 tracking-widest italic">Para cambiar con amigos</p>
+                                    </div>
+
+                                    {/* SECCIÓN ANALÍTICA: PROBABILIDAD DE SOBRES */}
+                                    <div className={`p-6 rounded-3xl border-2 flex flex-col justify-center text-center sm:text-left ${
+                                        stats.probNew > 40 ? 'bg-green-50/50 border-green-100 text-green-900' : 'bg-orange-50/50 border-orange-100 text-orange-900'
+                                    }`}>
+                                        <h4 className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1.5">
+                                            <Icon name="info" size={16} /> Probabilidad de Sobre Nuevo
+                                        </h4>
+                                        <p className="text-3xl font-black">{Math.round(stats.probNew)}%</p>
+                                        <p className="text-[10px] font-bold mt-1.5 leading-relaxed uppercase tracking-wide">
+                                            {stats.probNew > 40 
+                                                ? "¡Sigue abriendo sobres! La probabilidad de encontrar láminas nuevas aún es muy alta." 
+                                                : "¡Peligro de repetidas! Conviene frenar la compra y enfocarse en intercambios."
+                                            }
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-slate-500"><Icon name="award" className="text-yellow-500" /> Logros Desbloqueados</h4>
-                                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-hide">
-                                        {stats.sectionsData.filter(s => s.isDone).map(s => <span key={s.code} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase border border-green-200">{s.code}</span>)}
-                                        {stats.completedCount === 0 && <p className="text-xs text-slate-400 italic">Aquí aparecerán los países que completes al 100%.</p>}
+                                {/* SECCIÓN: PROGRESO POR SELECCIONES */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4">
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                                <Icon name="award" className="text-yellow-500" /> Progreso por Selecciones
+                                            </h4>
+                                            <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Avance individual, faltantes y repetidas</p>
+                                        </div>
+                                        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                                            {[
+                                                { id: 'pending', label: 'Incompletas' },
+                                                { id: 'done', label: 'Listas' },
+                                                { id: 'all', label: 'Todas' }
+                                            ].map(btn => (
+                                                <button
+                                                    key={btn.id}
+                                                    onClick={() => setDashboardFilter(btn.id)}
+                                                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
+                                                        dashboardFilter === btn.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    {btn.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Grid de Avance por País */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[360px] overflow-y-auto pr-1 border rounded-2xl p-2 bg-slate-50/50 scrollbar-hide">
+                                        {filteredDashboardSections.map(s => (
+                                            <div key={s.code} className="bg-white p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between">
+                                                <div className="flex justify-between items-start gap-1">
+                                                    <span className="font-extrabold text-[12px] truncate">{s.flag} {s.name}</span>
+                                                    <span className="text-[9px] font-black text-slate-400 px-1 bg-slate-100 rounded">{s.code}</span>
+                                                </div>
+                                                <div className="flex justify-between items-end mt-3">
+                                                    <div>
+                                                        <div className="flex flex-wrap items-center gap-1">
+                                                            <p className="text-[10px] text-slate-500 font-bold leading-none">{s.obtained}/{s.count} un.</p>
+                                                            {s.repeated > 0 && (
+                                                                <span className="text-[8px] font-black text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-200 leading-none">
+                                                                    {s.repeated} rep
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {s.isDone ? (
+                                                            <p className="text-[9px] text-green-600 font-extrabold mt-1 uppercase tracking-tight">País Completo</p>
+                                                        ) : (
+                                                            <p className="text-[9px] text-red-500 font-extrabold mt-1 uppercase tracking-tight">Faltan: {s.missing}</p>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                                        s.isDone ? 'text-green-700 bg-green-50 border border-green-200' : 'text-blue-700 bg-blue-50'
+                                                    }`}>
+                                                        {Math.round(s.percent)}%
+                                                    </span>
+                                                </div>
+                                                {/* Mini Barra de Progreso */}
+                                                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full transition-all duration-700 ${s.isDone ? 'bg-green-500' : 'bg-blue-500'}`} 
+                                                        style={{ width: `${s.percent}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {filteredDashboardSections.length === 0 && (
+                                            <div className="col-span-full py-12 text-center text-slate-400 italic text-xs">
+                                                No hay selecciones en esta categoría actualmente.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* RESPALDO MANUAL (SÚPER SEGURO) */}
+                                <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
+                                    <div className="text-center md:text-left">
+                                        <h3 className="font-black text-lg">Copia de Seguridad de Emergencia</h3>
+                                        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">Guarda un archivo de respaldo en tu iPad por seguridad</p>
+                                    </div>
+                                    <div className="flex gap-2 w-full md:w-auto">
+                                        <button onClick={exportData} className="flex-1 md:flex-none bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase active:scale-95 transition-all">Exportar .json</button>
+                                        <label className="flex-1 md:flex-none bg-slate-700 px-6 py-3 rounded-xl text-[10px] font-black uppercase text-center cursor-pointer active:scale-95 transition-all">
+                                            Importar .json <input type="file" className="hidden" accept=".json" onChange={importData} /></label>
                                     </div>
                                 </div>
 
@@ -394,17 +638,17 @@
                                     <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                                         <span className="font-bold text-blue-400 flex items-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                                            DIAGNÓSTICO EN TIEMPO REAL (FÁCIL)
+                                            DIAGNÓSTICO EN TIEMPO REAL
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                                         <div><b>Base de Datos:</b> pani-i2026</div>
                                         <div><b>Sincronización:</b> 
                                             <span className={`ml-1 font-bold ${cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400'}`}>
-                                                {cloudStatus === 'syncing' ? '🟢 ACTIVA' : '🔴 LOCAL'}
+                                                {cloudStatus === 'syncing' ? '🟢 CONECTADO' : '🔴 LOCAL'}
                                             </span>
                                         </div>
-                                        <div><b>Clave:</b> {syncCode || "SIN CLAVE"}</div>
+                                        <div><b>ID del Canal:</b> {syncCode || "SIN CLAVE"}</div>
                                     </div>
                                     <div className="border-t border-slate-800 pt-2 space-y-1">
                                         <p className="text-[10px] text-slate-500 uppercase font-black">Historial:</p>
@@ -426,7 +670,7 @@
                                         <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic">Seleccionar Selección</label>
                                         <div className="relative">
                                             <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none">
-                                                {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
+                                                {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.flag} {s.code} - {s.name}</option>)}
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                                 <Icon name="chevron-down" size={20} />
@@ -440,13 +684,27 @@
                                 </div>
 
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
-                                    <div className="flex justify-between items-center mb-8 px-2">
-                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic">
-                                            <span className="bg-blue-600 text-white text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-widest">{currentSectionInfo.code}</span> {currentSectionInfo.name}
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4 px-2">
+                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic leading-none">
+                                            <span>{currentSectionInfo.flag}</span> {currentSectionInfo.name} ({currentSectionInfo.code})
                                         </h3>
-                                        {stats.sectionsData.find(s => s.code === selectedSection)?.isDone && (
-                                            <span className="text-green-600 font-bold text-[10px] uppercase border border-green-200 px-3 py-1 bg-green-50 rounded-full flex items-center gap-1 leading-none"><Icon name="check-circle" size={12}/> COMPLETADO</span>
-                                        )}
+                                        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                                            {[
+                                                { id: 'all', label: 'Todas' },
+                                                { id: 'missing', label: 'Faltantes' },
+                                                { id: 'repeated', label: 'Repetidas' }
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.id}
+                                                    onClick={() => setAlbumSubFilter(opt.id)}
+                                                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
+                                                        albumSubFilter === opt.id ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                         {displayedStickers.map(sticker => (
@@ -464,31 +722,93 @@
                                             </div>
                                         ))}
                                     </div>
+                                    {displayedStickers.length === 0 && (
+                                        <div className="py-20 text-center text-slate-400 italic text-sm">
+                                            No hay láminas en esta sección con el filtro seleccionado.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {/* COMPARTIR */}
+                        {/* COMPARTIR Y COMPARAR */}
                         {activeTab === 'exchange' && (
-                            <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center animate-in fade-in">
-                                <div className="flex justify-center gap-4 mb-8">
-                                    {[
-                                        {id: 'both', label: 'Todo', icon: 'list'},
-                                        {id: 'repeats', label: 'Repetidas', icon: 'refresh-ccw'},
-                                        {id: 'missing', label: 'Faltantes', icon: 'alert-circle'}
-                                    ].map(m => (
-                                        <button key={m.id} onClick={() => setShareMode(m.id)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}>
-                                            <Icon name={m.icon} />
-                                            {m.label}
+                            <div className="space-y-6 animate-in fade-in">
+                                {/* SECCIÓN NUEVA: EL MATCHMAKER (COMPARTIR CON UN AMIGO) */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+                                    <div>
+                                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <Icon name="git-compare" className="text-indigo-600" /> Comparar Intercambio con un Amigo
+                                        </h4>
+                                        <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Cruza tus repetidas con lo que le falta a tu amigo automáticamente</p>
+                                    </div>
+                                    <div className="flex gap-2 max-w-md">
+                                        <input 
+                                            type="text" 
+                                            placeholder="CÓDIGO DE TU AMIGO (Ej: MATEO26)" 
+                                            value={friendCode}
+                                            onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
+                                            className="flex-1 px-4 py-3 border-2 rounded-2xl font-black uppercase text-xs outline-none focus:border-blue-500"
+                                        />
+                                        <button 
+                                            onClick={checkFriendSync}
+                                            className="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
+                                        >
+                                            Comparar
                                         </button>
-                                    ))}
+                                    </div>
+
+                                    {exchangeAnalysis && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 card-enter">
+                                            <div className="p-4 bg-green-50 border border-green-100 rounded-3xl space-y-2">
+                                                <h5 className="font-extrabold text-xs text-green-800 uppercase tracking-tight flex items-center gap-1">
+                                                    🎁 Le puedes dar a {friendName}:
+                                                </h5>
+                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-green-700 bg-white/50 p-2.5 rounded-xl border border-green-200">
+                                                    {exchangeAnalysis.iCanGive.length > 0 
+                                                        ? exchangeAnalysis.iCanGive.join(', ') 
+                                                        : "No tienes repetidas que le falten."
+                                                    }
+                                                </div>
+                                                <p className="text-[9px] text-green-600 font-bold uppercase">{exchangeAnalysis.iCanGive.length} láminas listas para regalarle.</p>
+                                            </div>
+
+                                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-3xl space-y-2">
+                                                <h5 className="font-extrabold text-xs text-blue-800 uppercase tracking-tight flex items-center gap-1">
+                                                    🎯 {friendName} te puede dar a ti:
+                                                </h5>
+                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-blue-700 bg-white/50 p-2.5 rounded-xl border border-blue-200">
+                                                    {exchangeAnalysis.friendCanGive.length > 0 
+                                                        ? exchangeAnalysis.friendCanGive.join(', ') 
+                                                        : "Tu amigo no tiene repetidas que te falten."
+                                                    }
+                                                </div>
+                                                <p className="text-[9px] text-blue-600 font-bold uppercase">{exchangeAnalysis.friendCanGive.length} láminas listas para recibir.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
-                                    {generateShareText()}
+
+                                <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center">
+                                    <div className="flex justify-center gap-4 mb-8">
+                                        {[
+                                            {id: 'both', label: 'Todo', icon: 'list'},
+                                            {id: 'repeats', label: 'Repetidas', icon: 'refresh-ccw'},
+                                            {id: 'missing', label: 'Faltantes', icon: 'alert-circle'}
+                                        ].map(m => (
+                                            <button key={m.id} onClick={() => setShareMode(m.id)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}>
+                                                <Icon name={m.icon} />
+                                                {m.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
+                                        {generateShareText()}
+                                    </div>
+                                    <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
+                                        <Icon name="copy" size={28} className="group-hover:rotate-12 transition-transform" /> COPIAR LISTA
+                                    </button>
                                 </div>
-                                <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
-                                    <Icon name="copy" size={28} className="group-hover:rotate-12 transition-transform" /> COPIAR LISTA
-                                </button>
                             </div>
                         )}
                     </main>
@@ -507,7 +827,7 @@
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Código Compartido</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Tu Código Personal</label>
                                         <input 
                                             type="text" 
                                             placeholder="EJ: MIRANDA26" 
@@ -517,16 +837,28 @@
                                         />
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe tu código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
                                     </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Nombre del Coleccionista</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="EJ: Miranda o Mateo" 
+                                            className="w-full px-4 py-3 border-2 rounded-2xl font-black text-sm outline-none focus:border-blue-500" 
+                                            value={collectorName}
+                                            onChange={(e) => setCollectorName(e.target.value)}
+                                        />
+                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
+                                    </div>
                                 </div>
 
-                                <button onClick={() => setShowSettings(false)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
-                                    Conectar Dispositivo
+                                <button onClick={handleSaveConfig} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
+                                    Guardar Ajustes
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.0</p></footer>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.2</p></footer>
                 </div>
             );
         };
