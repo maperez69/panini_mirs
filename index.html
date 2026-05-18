@@ -38,7 +38,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // CONFIGURACIÓN DE TU FIREBASE PERSONAL
+        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (Estable con tu BD)
         const CONFIG_PERSONAL_FIREBASE = {
             apiKey: "AIzaSyCpxBz20qqF6Xus6iYqJY_Vw5t7L5suiwg",
             authDomain: "pani-i2026.firebaseapp.com",
@@ -47,17 +47,6 @@
             messagingSenderId: "993320660945",
             appId: "1:993320660945:web:603b888456a7e3765e7af0",
             measurementId: "G-N2S2QD23T5"
-        };
-
-        // Diccionario oficial de jugadores
-        const PLAYER_DATABASE = {
-            "ARG1": "Escudo", "ARG2": "Equipo", "ARG3": "Emiliano Martínez", "ARG4": "Nahuel Molina", "ARG5": "Cristian Romero",
-            "ARG6": "Nicolás Otamendi", "ARG7": "Enzo Fernández", "ARG8": "Alexis Mac Allister", "ARG9": "Rodrigo De Paul",
-            "ARG10": "Lionel Messi", "ARG11": "Julián Álvarez", "ARG12": "Lautaro Martínez",
-            "MEX1": "Escudo", "MEX2": "Equipo", "MEX3": "Luis Malagón", "MEX4": "César Montes", "MEX5": "Johan Vásquez",
-            "MEX6": "Israel Reyes", "MEX7": "Jesús Gallardo", "MEX8": "Edson Álvarez", "MEX9": "Carlos Rodríguez",
-            "MEX10": "Orbelín Pineda", "MEX11": "Hirving Lozano", "MEX12": "Santiago Giménez", "MEX13": "Raúl Jiménez",
-            "CC1": "Lamine Yamal", "CC2": "Lautaro Martínez", "CC3": "Christian Pulisic"
         };
 
         const SECTION_LIST = [
@@ -361,13 +350,11 @@
             const exchangeAnalysis = useMemo(() => {
                 if (!friendStickers) return null;
 
-                // Estampas que yo tengo repetidas (count > 1) y a mi amigo le faltan (count === 0)
                 const iCanGive = stickers.filter(mySticker => {
                     const friendSticker = friendStickers.find(fs => fs.id === mySticker.id);
                     return mySticker.count > 1 && friendSticker && friendSticker.count === 0;
                 }).map(s => s.id);
 
-                // Estampas que mi amigo tiene repetidas (count > 1) y a mí me faltan (count === 0)
                 const friendCanGive = friendStickers.filter(friendSticker => {
                     const mySticker = stickers.find(ms => ms.id === friendSticker.id);
                     return friendSticker.count > 1 && mySticker && mySticker.count === 0;
@@ -377,8 +364,8 @@
             }, [stickers, friendStickers]);
 
             const generateShareText = () => {
-                const mList = stickers.filter(s => s.count === 0).map(s => PLAYER_DATABASE[s.id] ? `${s.id}(${PLAYER_DATABASE[s.id]})` : s.id).join(', ');
-                const rList = stickers.filter(s => s.count > 1).map(s => PLAYER_DATABASE[s.id] ? `${s.id}(${PLAYER_DATABASE[s.id]})` : s.id).join(', ');
+                const mList = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
+                const rList = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
                 let t = `⚽ *ALBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
                 if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${rList || 'Ninguna'}\n`;
                 if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
@@ -438,10 +425,7 @@
                     list = stickers.filter(s => s.code === selectedSection);
                 } else {
                     const search = filter.toUpperCase();
-                    list = stickers.filter(s => {
-                        const pName = (PLAYER_DATABASE[s.id] || "").toUpperCase();
-                        return s.id.includes(search) || pName.includes(search);
-                    });
+                    list = stickers.filter(s => s.id.includes(search));
                 }
 
                 // Aplicar filtros adicionales de álbum
@@ -679,7 +663,7 @@
                                     </div>
                                     <div className="w-full md:w-56 relative text-sm">
                                         <Icon name="search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input type="text" placeholder="Messi o MEX12..." className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
+                                        <input type="text" placeholder="MEX12, ARG10..." className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
                                     </div>
                                 </div>
 
@@ -708,11 +692,8 @@
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                                         {displayedStickers.map(sticker => (
-                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-44 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100/50' : 'bg-blue-50 border-blue-400 shadow-blue-100/50') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 active:scale-95`}>
-                                                <div className="flex flex-col items-center text-center">
-                                                    <span className={`text-xl font-black tracking-tighter leading-none ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
-                                                    <span className={`text-[9px] font-bold uppercase mt-1 px-1 line-clamp-2 ${sticker.count > 0 ? 'text-slate-700' : 'text-slate-300'}`}>{PLAYER_DATABASE[sticker.id] || "–"}</span>
-                                                </div>
+                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center gap-3 h-36 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100/50' : 'bg-blue-50 border-blue-400 shadow-blue-100/50') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 active:scale-95`}>
+                                                <span className={`text-xl font-black tracking-tighter leading-none ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
                                                 <div className="flex items-center gap-3">
                                                     <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border shadow-sm text-red-500 active:bg-red-50 transition-colors"><Icon name="minus" size={16}/></button>
                                                     <span className="font-black text-xl w-4 text-center">{sticker.count}</span>
@@ -734,7 +715,7 @@
                         {/* COMPARTIR Y COMPARAR */}
                         {activeTab === 'exchange' && (
                             <div className="space-y-6 animate-in fade-in">
-                                {/* SECCIÓN NUEVA: EL MATCHMAKER (COMPARTIR CON UN AMIGO) */}
+                                {/* SECCIÓN: EL MATCHMAKER (COMPARTIR CON UN AMIGO) */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
                                     <div>
                                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
