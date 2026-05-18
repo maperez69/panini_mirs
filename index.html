@@ -4,22 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Miranda Panini Tracker 2026</title>
-    
-    <!-- Librerías de Firebase Clásicas (Cargan síncronas y ultra estables) -->
-    <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
-    <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js)"></script>
-
     <!-- React y Babel para ejecución directa -->
-    <script src="[https://unpkg.com/react@18/umd/react.production.min.js](https://unpkg.com/react@18/umd/react.production.min.js)"></script>
-    <script src="[https://unpkg.com/react-dom@18/umd/react-dom.production.min.js](https://unpkg.com/react-dom@18/umd/react-dom.production.min.js)"></script>
-    <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Tailwind CSS para el diseño profesional -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos Lucide -->
-    <script src="[https://unpkg.com/lucide@latest](https://unpkg.com/lucide@latest)"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     
+    <!-- SDK de Firebase Compat (100% compatible con iPads, iPhones y Safari) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
-        @import url('[https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap)');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -39,9 +38,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // ==============================================================
-        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (PANI I2026)
-        // ==============================================================
+        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (Cargada desde tu imagen)
         const CONFIG_PERSONAL_FIREBASE = {
             apiKey: "AIzaSyCpxBz20qqF6Xus6iYqJY_Vw5t7L5suiwg",
             authDomain: "pani-i2026.firebaseapp.com",
@@ -149,52 +146,59 @@
             // Sincronización en la Nube
             const [syncCode, setSyncCode] = useState(() => localStorage.getItem('panini_sync_code') || '');
             const [cloudStatus, setCloudStatus] = useState('local'); // 'local', 'syncing', 'error'
-            const [logs, setLogs] = useState(["Iniciando sistema..."]);
+            const [logs, setLogs] = useState(["Iniciando aplicación..."]);
 
             const dbInstance = useRef(null);
             const unsubscribeFirestore = useRef(null);
 
             const addLog = (msg) => {
-                setLogs(prev => [...prev.slice(-12), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+                setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
 
-            // Guardar localmente siempre (Respaldo inmediato)
+            // Guardar localmente siempre (Fail-safe)
             useEffect(() => {
                 localStorage.setItem(APP_ID, JSON.stringify(stickers));
             }, [stickers]);
 
-            // Inicialización de Firebase Compat
+            // Inicialización de Firebase Compat (Estable en iPads)
             useEffect(() => {
-                try {
-                    addLog("Conectando con librerías de base de datos...");
-                    if (typeof firebase === 'undefined') {
-                        addLog("Error: Librería no disponible todavía.");
+                const initFirebase = () => {
+                    addLog("Conectando con base de datos...");
+                    try {
+                        if (!window.firebase) {
+                            addLog("Esperando librerías...");
+                            setTimeout(initFirebase, 500);
+                            return;
+                        }
+
+                        // Inicializar el SDK global
+                        if (window.firebase.apps.length === 0) {
+                            window.firebase.initializeApp(CONFIG_PERSONAL_FIREBASE);
+                        }
+                        
+                        dbInstance.current = window.firebase.firestore();
+                        setCloudStatus('syncing');
+                        addLog("Conectado con Firebase (Compat).");
+                    } catch (err) {
+                        console.error("Fallo de conexión a Firebase:", err);
                         setCloudStatus('error');
-                        return;
+                        addLog(`Error de inicio: ${err.message}`);
                     }
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(CONFIG_PERSONAL_FIREBASE);
-                    }
-                    dbInstance.current = firebase.firestore();
-                    setCloudStatus('local');
-                    addLog("Conexión con Firebase establecida.");
-                } catch (err) {
-                    console.error("Firebase init failed:", err);
-                    setCloudStatus('error');
-                    addLog(`Error de inicio: ${err.message}`);
-                }
+                };
+                initFirebase();
             }, []);
 
             // Escuchar cambios de Firestore en tiempo real (Lectura)
             useEffect(() => {
                 if (!syncCode || !dbInstance.current) return;
 
-                addLog(`Buscando canal de nube: "${syncCode.toUpperCase()}"...`);
-                setCloudStatus('syncing');
-
+                addLog(`Buscando canal: ${syncCode}...`);
+                const appId = "miranda-tracker-app";
+                
+                // Referencia estructurada clásica de Firestore Compat
                 const docRef = dbInstance.current
                     .collection('artifacts')
-                    .doc('miranda-tracker-app')
+                    .doc(appId)
                     .collection('public')
                     .doc('data')
                     .collection('user_stickers')
@@ -202,21 +206,22 @@
 
                 if (unsubscribeFirestore.current) unsubscribeFirestore.current();
 
+                setCloudStatus('syncing');
                 unsubscribeFirestore.current = docRef.onSnapshot((docSnap) => {
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        if (data.stickers) {
+                        if (data && data.stickers) {
                             setStickers(data.stickers);
-                            addLog("¡Sincronizado! Datos actualizados en este dispositivo.");
+                            addLog("¡Datos sincronizados!");
                             setCloudStatus('syncing');
                         }
                     } else {
-                        addLog("Canal nuevo. Registrando dispositivo actual...");
+                        addLog("Canal nuevo creado en la nube.");
                     }
                 }, (err) => {
                     console.error("Firestore sync failed:", err);
                     setCloudStatus('error');
-                    addLog(`Error de permisos: ${err.message}`);
+                    addLog(`Error: Verifica las reglas de Firestore.`);
                 });
 
                 localStorage.setItem('panini_sync_code', syncCode.trim().toUpperCase());
@@ -229,23 +234,22 @@
             // Subir datos actualizados a la nube (Escritura)
             const pushToCloud = async (newStickers) => {
                 if (!syncCode || !dbInstance.current) return;
+                
+                const appId = "miranda-tracker-app";
+                const docRef = dbInstance.current
+                    .collection('artifacts')
+                    .doc(appId)
+                    .collection('public')
+                    .doc('data')
+                    .collection('user_stickers')
+                    .doc(syncCode.trim().toUpperCase());
+                
                 try {
-                    const docRef = dbInstance.current
-                        .collection('artifacts')
-                        .doc('miranda-tracker-app')
-                        .collection('public')
-                        .doc('data')
-                        .collection('user_stickers')
-                        .doc(syncCode.trim().toUpperCase());
-
-                    await docRef.set({
-                        stickers: newStickers,
-                        lastUpdated: new Date()
-                    }, { merge: true });
-                    addLog("Láminas guardadas en la nube.");
+                    await docRef.set({ stickers: newStickers, lastUpdated: new Date() }, { merge: true });
+                    addLog("Cambio guardado en la nube.");
                 } catch (e) {
                     console.error("Fallo al escribir en la nube:", e);
-                    addLog(`Error de escritura: ${e.message}`);
+                    addLog(`Error de guardado: ${e.message}`);
                 }
             };
 
@@ -309,8 +313,8 @@
                         <div className="max-w-4xl mx-auto flex justify-between items-center text-center sm:text-left">
                             <div className="flex items-center gap-3">
                                 <button onClick={() => setShowSettings(true)} className="p-2 bg-white/10 hover:bg-white/20 rounded-lg shadow-inner transition-all flex items-center gap-2">
-                                    <Icon name="cloud" className={cloudStatus === 'syncing' ? 'text-green-400' : cloudStatus === 'error' ? 'text-red-400 animate-pulse' : 'text-yellow-400'} size={24} />
-                                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Sincronización</span>
+                                    <Icon name="cloud" className={cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400 animate-pulse'} size={24} />
+                                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Conectar Nube</span>
                                 </button>
                                 <div>
                                     <h1 className="text-xl font-black italic tracking-tighter">MIRANDA 2026</h1>
@@ -385,30 +389,28 @@
                                     </div>
                                 </div>
 
-                                {/* PANEL DE DIAGNÓSTICO EN TIEMPO REAL */}
-                                <div className="bg-slate-900 text-slate-300 p-5 rounded-3xl border-4 border-slate-800 font-mono text-[10px] space-y-3 shadow-2xl">
+                                {/* PANEL DE DIAGNÓSTICO INTEGRADO */}
+                                <div className="bg-slate-900 text-slate-300 p-5 rounded-[2rem] border-4 border-slate-800 font-mono text-xs space-y-3 shadow-2xl">
                                     <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                                         <span className="font-bold text-blue-400 flex items-center gap-2">
                                             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                                            DIAGNÓSTICO EN TIEMPO REAL
+                                            DIAGNÓSTICO EN TIEMPO REAL (FÁCIL)
                                         </span>
-                                        <span className="text-[9px] text-slate-500">Firebase v10.8.0</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div><b>Proyecto ID:</b> {CONFIG_PERSONAL_FIREBASE.projectId}</div>
-                                        <div><b>Estado Nube:</b> 
-                                            <span className={`ml-1 font-bold ${cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400 animate-pulse'}`}>
-                                                {cloudStatus === 'syncing' ? '🟢 SINCRO OK' : cloudStatus === 'local' ? '🟡 SÓLO DISPOSITIVO' : '🔴 NO CONECTADO'}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                                        <div><b>Base de Datos:</b> pani-i2026</div>
+                                        <div><b>Sincronización:</b> 
+                                            <span className={`ml-1 font-bold ${cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400'}`}>
+                                                {cloudStatus === 'syncing' ? '🟢 ACTIVA' : '🔴 LOCAL'}
                                             </span>
                                         </div>
-                                        <div><b>Clave Miranda:</b> {syncCode || "SIN CLAVE"}</div>
-                                        <div><b>Almacenamiento:</b> LocalStorage Guardado</div>
+                                        <div><b>Clave:</b> {syncCode || "SIN CLAVE"}</div>
                                     </div>
                                     <div className="border-t border-slate-800 pt-2 space-y-1">
-                                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider">Historial de Conexión:</p>
-                                        <div className="max-h-24 overflow-y-auto space-y-1 scrollbar-hide">
+                                        <p className="text-[10px] text-slate-500 uppercase font-black">Historial:</p>
+                                        <div className="max-h-24 overflow-y-auto space-y-1 scrollbar-hide text-[10px] text-slate-400">
                                             {logs.map((log, idx) => (
-                                                <p key={idx} className="text-[9px] text-slate-400 leading-none">{log}</p>
+                                                <p key={idx} className="leading-tight">{log}</p>
                                             ))}
                                         </div>
                                     </div>
@@ -513,7 +515,7 @@
                                             value={syncCode}
                                             onChange={(e) => setSyncCode(e.target.value.toUpperCase())}
                                         />
-                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe un código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
+                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe tu código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
                                     </div>
                                 </div>
 
@@ -524,7 +526,7 @@
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Tracker Cloud v10.0</p></footer>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.0</p></footer>
                 </div>
             );
         };
