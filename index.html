@@ -38,7 +38,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // CONFIGURACIÓN DE TU FIREBASE PERSONAL
+        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (Estable con tu BD)
         const CONFIG_PERSONAL_FIREBASE = {
             apiKey: "AIzaSyCpxBz20qqF6Xus6iYqJY_Vw5t7L5suiwg",
             authDomain: "pani-i2026.firebaseapp.com",
@@ -102,26 +102,16 @@
             { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
         ];
 
-        // Función auxiliar para agrupar estampas por país y formatear el texto igual a la imagen
-        const formatStickersGrouped = (stickerList) => {
-            const grouped = {};
-            stickerList.forEach(s => {
-                if (!grouped[s.code]) {
-                    grouped[s.code] = [];
-                }
-                grouped[s.code].push(s.num);
-            });
+        const APP_ID = "miranda-tracker-v10-prod";
 
-            const formattedLines = [];
+        const generateInitialStickers = () => {
+            const initial = [];
             SECTION_LIST.forEach(section => {
-                const nums = grouped[section.code];
-                if (nums && nums.length > 0) {
-                    const sortedNums = [...nums].sort((a, b) => a - b);
-                    formattedLines.push(`${section.code} ${section.flag}: ${sortedNums.join(', ')}`);
+                for (let i = 1; i <= section.count; i++) {
+                    initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
                 }
             });
-
-            return formattedLines.join('\n');
+            return initial;
         };
 
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -130,21 +120,9 @@
         };
 
         const App = () => {
-            // Intentamos recuperar del almacenamiento local usando ambas claves posibles históricas
             const [stickers, setStickers] = useState(() => {
-                const saved1 = localStorage.getItem("miranda-sticker-tracker-2026");
-                const saved2 = localStorage.getItem("miranda-tracker-v10-prod");
-                const saved = saved1 || saved2;
-                
-                if (saved) return JSON.parse(saved);
-                
-                const initial = [];
-                SECTION_LIST.forEach(section => {
-                    for (let i = 1; i <= section.count; i++) {
-                        initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
-                    }
-                });
-                return initial;
+                const saved = localStorage.getItem(APP_ID);
+                return saved ? JSON.parse(saved) : generateInitialStickers();
             });
 
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -162,10 +140,6 @@
             const [cloudStatus, setCloudStatus] = useState('local'); // 'local', 'syncing', 'error'
             const [logs, setLogs] = useState(["Iniciando aplicación..."]);
 
-            // Estados temporales del Modal de Ajustes (Evita reconexión a cada tecla escrita)
-            const [inputSyncCode, setInputSyncCode] = useState(syncCode);
-            const [inputCollectorName, setInputCollectorName] = useState(collectorName);
-
             // Comparador (Matchmaker)
             const [friendCode, setFriendCode] = useState('');
             const [friendStickers, setFriendStickers] = useState(null);
@@ -173,13 +147,12 @@
 
             const dbInstance = useRef(null);
             const unsubscribeFirestore = useRef(null);
-            const activeAppId = useRef('miranda-tracker-app'); // Ruta activa identificada
 
             const addLog = (msg) => {
                 setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
 
-            // Nombre dinámico del usuario
+            // Deducir el nombre dinámico del coleccionista
             const displayName = useMemo(() => {
                 if (collectorName) return collectorName;
                 if (syncCode) {
@@ -191,19 +164,10 @@
                 return "Coleccionista";
             }, [collectorName, syncCode]);
 
-            // Guardamos localmente en ambas claves posibles para evitar cualquier pérdida de memoria
+            // Guardar localmente siempre (Fail-safe)
             useEffect(() => {
-                localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(stickers));
-                localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(stickers));
+                localStorage.setItem(APP_ID, JSON.stringify(stickers));
             }, [stickers]);
-
-            // Sincronizar estados locales del modal cuando se abra
-            useEffect(() => {
-                if (showSettings) {
-                    setInputSyncCode(syncCode);
-                    setInputCollectorName(collectorName);
-                }
-            }, [showSettings]);
 
             // Inicialización de Firebase Compat
             useEffect(() => {
@@ -232,9 +196,12 @@
                 initFirebase();
             }, []);
 
-            // Escuchador en tiempo real dinámico
-            const startRealTimeListener = (appId, cleanCode) => {
-                if (unsubscribeFirestore.current) unsubscribeFirestore.current();
+            // Escuchar cambios de Firestore en tiempo real (Lectura)
+            useEffect(() => {
+                if (!syncCode || !dbInstance.current) return;
+
+                addLog(`Buscando canal: ${syncCode}...`);
+                const appId = "miranda-tracker-app";
                 
                 const docRef = dbInstance.current
                     .collection('artifacts')
@@ -242,106 +209,44 @@
                     .collection('public')
                     .doc('data')
                     .collection('user_stickers')
-                    .doc(cleanCode);
+                    .doc(syncCode.trim().toUpperCase());
+
+                if (unsubscribeFirestore.current) unsubscribeFirestore.current();
 
                 setCloudStatus('syncing');
                 unsubscribeFirestore.current = docRef.onSnapshot((docSnap) => {
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        if (data && data.stickers) {
-                            setStickers(data.stickers);
-                            addLog("¡Datos sincronizados en tiempo real!");
+                        if (data) {
+                            if (data.stickers) setStickers(data.stickers);
+                            if (data.collectorName) setCollectorName(data.collectorName);
+                            addLog("¡Datos sincronizados!");
                             setCloudStatus('syncing');
                         }
+                    } else {
+                        addLog("Canal nuevo creado en la nube.");
                     }
                 }, (err) => {
-                    console.error("Firestore listen failed:", err);
+                    console.error("Firestore sync failed:", err);
                     setCloudStatus('error');
-                    addLog(`Error de escucha: ${err.message}`);
+                    addLog(`Error: Verifica las reglas de Firestore.`);
                 });
-            };
 
-            // Escáner inteligente y recuperación automática de cajitas anteriores de Firebase
-            const scanAndSync = async (code) => {
-                const cleanCode = code.trim().toUpperCase();
-                addLog(`Iniciando escaneo de recuperación para: ${cleanCode}...`);
-                
-                // Las rutas que la app pudo haber usado anteriormente en Firebase
-                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
-                let bestData = null;
-                let bestPath = 'miranda-tracker-app';
-                let bestTime = 0;
+                localStorage.setItem('panini_sync_code', syncCode.trim().toUpperCase());
 
-                for (const path of pathsToTry) {
-                    try {
-                        const docRef = dbInstance.current
-                            .collection('artifacts')
-                            .doc(path)
-                            .collection('public')
-                            .doc('data')
-                            .collection('user_stickers')
-                            .doc(cleanCode);
-                            
-                        const snap = await docRef.get();
-                        if (snap.exists) {
-                            const data = snap.data();
-                            if (data && data.stickers) {
-                                const countOwned = data.stickers.filter(s => s.count > 0).length;
-                                addLog(`¡Registro hallado en [${path}] con ${countOwned} láminas!`);
-                                const updatedTime = data.lastUpdated ? data.lastUpdated.toDate().getTime() : 1;
-                                if (updatedTime > bestTime) {
-                                    bestTime = updatedTime;
-                                    bestData = data;
-                                    bestPath = path;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error(`Error escaneando ruta ${path}:`, e);
-                    }
-                }
-
-                if (bestData) {
-                    addLog(`Cargando datos recuperados desde canal [${bestPath}].`);
-                    setStickers(bestData.stickers);
-                    if (bestData.collectorName) setCollectorName(bestData.collectorName);
-                    activeAppId.current = bestPath;
-                    setCloudStatus('syncing');
-                    startRealTimeListener(bestPath, cleanCode);
-                } else {
-                    addLog("No se encontraron respaldos en la nube. Buscando progreso local...");
-                    const localSaved = localStorage.getItem("miranda-sticker-tracker-2026") || localStorage.getItem("miranda-tracker-v10-prod");
-                    if (localSaved) {
-                        const parsed = JSON.parse(localSaved);
-                        const localOwned = parsed.filter(s => s.count > 0).length;
-                        if (localOwned > 0) {
-                            addLog(`¡Progreso local detectado (${localOwned} láminas)! Sincronizando con la nube...`);
-                            setStickers(parsed);
-                            activeAppId.current = 'miranda-tracker-app';
-                            await pushToCloud(parsed, collectorName);
-                            startRealTimeListener('miranda-tracker-app', cleanCode);
-                            return;
-                        }
-                    }
-                    addLog("Iniciando canal nuevo vacío en la nube.");
-                    activeAppId.current = 'miranda-tracker-app';
-                    startRealTimeListener('miranda-tracker-app', cleanCode);
-                }
-            };
-
-            // Escuchar cambios de Firestore
-            useEffect(() => {
-                if (!syncCode || !dbInstance.current) return;
-                scanAndSync(syncCode);
-            }, [syncCode, dbInstance.current]);
+                return () => {
+                    if (unsubscribeFirestore.current) unsubscribeFirestore.current();
+                };
+            }, [syncCode]);
 
             // Subir datos actualizados a la nube (Escritura)
             const pushToCloud = async (newStickers, newName = collectorName) => {
                 if (!syncCode || !dbInstance.current) return;
                 
+                const appId = "miranda-tracker-app";
                 const docRef = dbInstance.current
                     .collection('artifacts')
-                    .doc(activeAppId.current)
+                    .doc(appId)
                     .collection('public')
                     .doc('data')
                     .collection('user_stickers')
@@ -386,7 +291,7 @@
 
                 // Cálculo de Estrategia de Compra
                 const ratioOwned = ownedCount / total;
-                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100;
+                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100; // Probabilidad en un sobre de 5 láminas
 
                 return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
             }, [stickers]);
@@ -397,60 +302,46 @@
                 if (syncCode) pushToCloud(next);
             };
 
-            // Guarda los ajustes del Modal de forma manual (Soluciona el delay al teclear)
             const handleSaveConfig = () => {
-                const cleanCode = inputSyncCode.trim().toUpperCase();
-                setSyncCode(cleanCode);
-                setCollectorName(inputCollectorName);
-                
-                localStorage.setItem('panini_sync_code', cleanCode);
-                localStorage.setItem('panini_collector_name', inputCollectorName);
-                
+                localStorage.setItem('panini_collector_name', collectorName);
+                if (syncCode) pushToCloud(stickers, collectorName);
                 setShowSettings(false);
-                setNotification("Ajustes guardados");
+                setNotification("Ajustes sincronizados");
                 setTimeout(() => setNotification(null), 3000);
             };
 
-            // Buscar datos de un amigo para comparar (Matchmaker cruzado robusto)
+            // Buscar datos de un amigo para comparar (Matchmaker)
             const checkFriendSync = async () => {
                 if (!dbInstance.current || !friendCode) return;
                 const cleanFriendCode = friendCode.trim().toUpperCase();
-                addLog(`Buscando datos de amigo: ${cleanFriendCode}...`);
+                addLog(`Buscando datos de: ${cleanFriendCode}...`);
                 
-                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
-                let friendFound = null;
+                const appId = "miranda-tracker-app";
+                const docRef = dbInstance.current
+                    .collection('artifacts')
+                    .doc(appId)
+                    .collection('public')
+                    .doc('data')
+                    .collection('user_stickers')
+                    .doc(cleanFriendCode);
 
-                for (const path of pathsToTry) {
-                    try {
-                        const docRef = dbInstance.current
-                            .collection('artifacts')
-                            .doc(path)
-                            .collection('public')
-                            .doc('data')
-                            .collection('user_stickers')
-                            .doc(cleanFriendCode);
-                            
-                        const snap = await docRef.get();
-                        if (snap.exists) {
-                            const data = snap.data();
-                            if (data && data.stickers) {
-                                friendFound = data;
-                                addLog(`¡Amigo encontrado en ruta [${path}]!`);
-                                break;
-                            }
+                try {
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        if (data && data.stickers) {
+                            setFriendStickers(data.stickers);
+                            setFriendName(data.collectorName || cleanFriendCode);
+                            setNotification(`¡Comparando con ${data.collectorName || cleanFriendCode}!`);
+                            addLog(`Conexión exitosa con ${cleanFriendCode}.`);
                         }
-                    } catch (e) {
-                        console.error(e);
+                    } else {
+                        setNotification("Código de amigo no encontrado.");
+                        setFriendStickers(null);
                     }
-                }
-
-                if (friendFound) {
-                    setFriendStickers(friendFound.stickers);
-                    setFriendName(friendFound.collectorName || cleanFriendCode);
-                    setNotification(`¡Comparando con ${friendFound.collectorName || cleanFriendCode}!`);
-                } else {
-                    setNotification("Código de amigo no encontrado.");
-                    setFriendStickers(null);
+                } catch (err) {
+                    console.error("Error matching friend:", err);
+                    addLog("Error al buscar amigo.");
                 }
                 setTimeout(() => setNotification(null), 3000);
             };
@@ -473,15 +364,11 @@
             }, [stickers, friendStickers]);
 
             const generateShareText = () => {
-                const missingStickers = stickers.filter(s => s.count === 0);
-                const repeatsStickers = stickers.filter(s => s.count > 1);
-
-                const missingText = formatStickersGrouped(missingStickers);
-                const repeatsText = formatStickersGrouped(repeatsStickers);
-
-                let t = `⚽ *ÁLBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
-                if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${repeatsText || 'Ninguna'}\n`;
-                if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${missingText || 'Ninguna'}\n`;
+                const mList = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
+                const rList = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
+                let t = `⚽ *ALBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
+                if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${rList || 'Ninguna'}\n`;
+                if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
                 return t + "\n_¡Intercambiemos!_";
             };
 
@@ -926,8 +813,8 @@
                                             type="text" 
                                             placeholder="EJ: MIRANDA26" 
                                             className="w-full px-4 py-3 border-2 rounded-2xl font-black uppercase text-sm outline-none focus:border-blue-500" 
-                                            value={inputSyncCode}
-                                            onChange={(e) => setInputSyncCode(e.target.value.toUpperCase())}
+                                            value={syncCode}
+                                            onChange={(e) => setSyncCode(e.target.value.toUpperCase())}
                                         />
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe tu código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
                                     </div>
@@ -938,8 +825,8 @@
                                             type="text" 
                                             placeholder="EJ: Miranda o Mateo" 
                                             className="w-full px-4 py-3 border-2 rounded-2xl font-black text-sm outline-none focus:border-blue-500" 
-                                            value={inputCollectorName}
-                                            onChange={(e) => setInputCollectorName(e.target.value)}
+                                            value={collectorName}
+                                            onChange={(e) => setCollectorName(e.target.value)}
                                         />
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
                                     </div>
@@ -952,7 +839,7 @@
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.3</p></footer>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.2</p></footer>
                 </div>
             );
         };
