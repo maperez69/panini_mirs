@@ -160,6 +160,7 @@
         };
 
         const App = () => {
+            // Intentamos recuperar del almacenamiento local usando ambas claves posibles históricas
             const [stickers, setStickers] = useState(() => {
                 const saved1 = localStorage.getItem("miranda-sticker-tracker-2026");
                 const saved2 = localStorage.getItem("miranda-tracker-v10-prod");
@@ -572,38 +573,43 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
-            // Importar progreso pegando texto copiado de WhatsApp
+            // IMPORTADOR INTELIGENTE DUAL DE WHATSAPP (FALTANTES Y REPETIDAS JUNTAS)
             const importFromText = (rawText) => {
                 try {
                     const cleanText = rawText.toUpperCase();
-                    const hasMissing = cleanText.includes("FALTAN") || cleanText.includes("FALTA");
-                    const hasRepeats = cleanText.includes("REPETIDAS") || cleanText.includes("TENGO") || cleanText.includes("REPETIDA");
+                    const hasMissing = cleanText.includes("FALTAN") || cleanText.includes("FALTA") || cleanText.includes("❌");
+                    const hasRepeats = cleanText.includes("REPETIDAS") || cleanText.includes("TENGO") || cleanText.includes("REPETIDA") || cleanText.includes("✅");
                     
                     let tempStickers = generateInitialStickers();
                     
+                    // Si el mensaje contiene una lista de faltantes, asumimos por lógica de conjuntos 
+                    // que todo lo que NO está en la lista de faltantes ya lo tenemos (count = 1).
                     if (hasMissing) {
-                        // Asumimos base 1 para todo, y luego restamos los faltantes
                         tempStickers = tempStickers.map(s => ({ ...s, count: 1 }));
                     } else {
-                        // Si solo hay repetidas, preservamos el progreso actual
+                        // Si el mensaje es puramente de repetidas (no menciona faltantes),
+                        // preservamos todo el progreso que el usuario ya tenga en el iPad.
                         tempStickers = JSON.parse(JSON.stringify(stickers));
                     }
 
                     const lines = rawText.split('\n');
-                    let currentBlock = 'none';
+                    let currentBlock = 'none'; // 'missing' o 'repeats'
 
                     lines.forEach(line => {
-                        const upperLine = line.toUpperCase();
+                        const upperLine = line.toUpperCase().trim();
+                        if (!upperLine) return;
+
+                        // Detectamos en qué sección del mensaje de WhatsApp nos encontramos
                         if (upperLine.includes("REPETIDAS") || upperLine.includes("TENGO") || upperLine.includes("REPETIDA") || upperLine.includes("✅")) {
                             currentBlock = 'repeats';
                             return;
                         }
-                        if (upperLine.includes("FALTAN") || upperLine.includes("FALTA") || upperLine.includes("❌")) {
+                        if (upperLine.includes("FALTAN") || upperLine.includes("FALTA") || upperLine.includes("ME FALTAN") || upperLine.includes("❌")) {
                             currentBlock = 'missing';
                             return;
                         }
 
-                        // Si aún no se define bloque pero hay texto, y el texto general tiene faltantes, empezamos en missing por defecto
+                        // Asignación por defecto en caso de que no haya encabezado claro
                         if (currentBlock === 'none') {
                             if (hasMissing) {
                                 currentBlock = 'missing';
@@ -629,7 +635,8 @@
                                                 if (currentBlock === 'missing') {
                                                     tempStickers[idx].count = 0;
                                                 } else if (currentBlock === 'repeats') {
-                                                    tempStickers[idx].count = 2; // Tiene al menos la original y 1 repetida
+                                                    // Si es repetida, garantizamos que tenga la del álbum (1) más mínimo una repetida
+                                                    tempStickers[idx].count = Math.max(2, tempStickers[idx].count + 1);
                                                 }
                                             }
                                         }
@@ -641,7 +648,7 @@
 
                     setStickers(tempStickers);
                     if (syncCode) pushToCloud(tempStickers);
-                    setNotification("¡Álbum restaurado desde texto!");
+                    setNotification("¡Álbum cargado con repetidas y faltantes!");
                 } catch (err) {
                     console.error("WhatsApp text parse error:", err);
                     setNotification("Error al procesar el texto.");
@@ -858,6 +865,40 @@
                                     </div>
                                 </div>
 
+                                {/* SECCIÓN EXCLUSIVA DE WHATSAPP INLINE (SÚPER FOOLPROOF) */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+                                    <div className="flex items-center gap-2 border-b pb-3">
+                                        <div className="bg-green-100 text-green-700 p-2 rounded-xl">
+                                            <Icon name="clipboard-list" size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Recuperar con texto de WhatsApp</h4>
+                                            <p className="text-[9px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Pega tu lista guardada aquí abajo y recupera todo tu álbum al instante</p>
+                                        </div>
+                                    </div>
+                                    <textarea 
+                                        rows="4"
+                                        placeholder="Pega aquí tu lista copiada de WhatsApp (ej: ME FALTAN... MEX 🇲🇽: 1, 5, 11 o TENGO REPETIDAS...)"
+                                        className="w-full p-3 border rounded-2xl font-mono text-[10px] bg-slate-50 outline-none focus:border-blue-500"
+                                        value={whatsappText}
+                                        onChange={(e) => setWhatsappText(e.target.value)}
+                                    ></textarea>
+                                    <button 
+                                        onClick={() => {
+                                            if (whatsappText.trim()) {
+                                                importFromText(whatsappText);
+                                                setWhatsappText('');
+                                            } else {
+                                                setNotification("Por favor, pega el texto primero.");
+                                                setTimeout(() => setNotification(null), 3000);
+                                            }
+                                        }}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl text-[10px] uppercase shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="check" size={14} /> Procesar y Cargar desde WhatsApp
+                                    </button>
+                                </div>
+
                                 {/* SECCIÓN: PROGRESO POR SELECCIONES */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4">
@@ -933,7 +974,7 @@
                                     </div>
                                 </div>
 
-                                {/* RESPALDO MANUAL (SÚPER SEGURO) */}
+                                {/* RESPALDO MANUAL */}
                                 <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
                                     <div className="text-center md:text-left">
                                         <h3 className="font-black text-lg">Copia de Seguridad de Emergencia</h3>
@@ -1311,7 +1352,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(App);
     </script>
 </body>
 </html>
