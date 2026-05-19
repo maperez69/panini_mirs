@@ -1,851 +1,400 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Miranda Panini Tracker 2026</title>
-    <!-- React y Babel para ejecución directa -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Tailwind CSS para el diseño profesional -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Trophy, 
+  Share2, 
+  TrendingUp, 
+  Copy, 
+  Plus, 
+  Minus, 
+  Search, 
+  LayoutGrid, 
+  Info, 
+  ChevronDown, 
+  Flag,
+  RefreshCcw,
+  AlertCircle
+} from 'lucide-react';
+
+// --- CONFIGURACIÓN DE SECCIONES (SEGÚN CHECKLIST DE STICKERS) ---
+const SECTION_LIST = [
+  { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
+  { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
+  { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
+  { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
+  { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
+  { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
+  { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
+  { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
+  { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
+  { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
+  { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
+  { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
+  { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
+  { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
+  { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
+  { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
+  { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
+  { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
+  { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
+  { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
+  { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
+  { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
+  { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
+  { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
+  { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
+  { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
+  { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
+  { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
+  { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
+  { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
+  { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
+  { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
+  { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
+  { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
+  { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
+  { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
+  { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
+  { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
+  { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
+  { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
+  { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
+  { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
+  { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
+  { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
+  { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
+  { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
+  { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
+  { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
+  { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
+  { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
+];
+
+const APP_ID = "miranda-sticker-tracker-2026";
+
+// Función auxiliar para agrupar estampas por país y formatear el texto
+const formatStickersGrouped = (stickerList) => {
+  const grouped = {};
+  stickerList.forEach(s => {
+    if (!grouped[s.code]) {
+      grouped[s.code] = [];
+    }
+    grouped[s.code].push(s.num);
+  });
+
+  const formattedLines = [];
+  SECTION_LIST.forEach(section => {
+    const nums = grouped[section.code];
+    if (nums && nums.length > 0) {
+      // Ordena los números de menor a mayor
+      const sortedNums = [...nums].sort((a, b) => a - b);
+      formattedLines.push(`${section.code} ${section.flag} : ${sortedNums.join(', ')}`);
+    }
+  });
+
+  return formattedLines.join('\n');
+};
+
+const App = () => {
+  // --- Estado de láminas ---
+  const [stickers, setStickers] = useState(() => {
+    const saved = localStorage.getItem(APP_ID);
+    if (saved) return JSON.parse(saved);
+
+    const initial = [];
+    SECTION_LIST.forEach(section => {
+      for (let i = 1; i <= section.count; i++) {
+        initial.push({
+          id: `${section.code} ${i}`,
+          code: section.code,
+          num: i,
+          count: 0
+        });
+      }
+    });
+    return initial;
+  });
+
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [filter, setFilter] = useState('');
+  const [selectedSection, setSelectedSection] = useState('MEX');
+  const [notification, setNotification] = useState(null);
+  const [shareMode, setShareMode] = useState('both');
+
+  // Persistencia
+  useEffect(() => {
+    localStorage.setItem(APP_ID, JSON.stringify(stickers));
+  }, [stickers]);
+
+  // Cálculos
+  const stats = useMemo(() => {
+    const total = stickers.length;
+    const owned = stickers.filter(s => s.count > 0).length;
+    const repeated = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+    const progress = (owned / total) * 100;
     
-    <!-- SDK de Firebase Compat (100% compatible con iPads, iPhones y Safari) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes progress { from { stroke-dasharray: 0 100; } }
-        .progress-ring { animation: progress 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .card-enter { animation: fadeInUp 0.3s ease-out forwards; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-900 font-sans">
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-
-        // CONFIGURACIÓN DE TU FIREBASE PERSONAL (Estable con tu BD)
-        const CONFIG_PERSONAL_FIREBASE = {
-            apiKey: "AIzaSyCpxBz20qqF6Xus6iYqJY_Vw5t7L5suiwg",
-            authDomain: "pani-i2026.firebaseapp.com",
-            projectId: "pani-i2026",
-            storageBucket: "pani-i2026.firebasestorage.app",
-            messagingSenderId: "993320660945",
-            appId: "1:993320660945:web:603b888456a7e3765e7af0",
-            measurementId: "G-N2S2QD23T5"
-        };
-
-        const SECTION_LIST = [
-            { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
-            { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
-            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
-            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
-            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
-            { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
-            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
-            { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
-            { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
-            { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
-            { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
-            { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
-            { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
-            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
-            { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
-            { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
-            { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
-            { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
-            { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
-            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
-            { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
-            { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
-            { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
-            { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
-            { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
-            { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
-            { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
-            { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
-            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
-            { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
-            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
-            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
-            { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
-            { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
-            { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
-            { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
-            { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
-            { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
-            { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
-            { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
-            { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
-            { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
-            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
-            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
-            { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
-            { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
-            { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
-            { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
-            { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
-            { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
-        ];
-
-        const APP_ID = "miranda-tracker-v10-prod";
-
-        const generateInitialStickers = () => {
-            const initial = [];
-            SECTION_LIST.forEach(section => {
-                for (let i = 1; i <= section.count; i++) {
-                    initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
-                }
-            });
-            return initial;
-        };
-
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
-        };
-
-        const App = () => {
-            const [stickers, setStickers] = useState(() => {
-                const saved = localStorage.getItem(APP_ID);
-                return saved ? JSON.parse(saved) : generateInitialStickers();
-            });
-
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [filter, setFilter] = useState('');
-            const [selectedSection, setSelectedSection] = useState('MEX');
-            const [notification, setNotification] = useState(null);
-            const [shareMode, setShareMode] = useState('both');
-            const [showSettings, setShowSettings] = useState(false);
-            const [dashboardFilter, setDashboardFilter] = useState('pending'); // 'all', 'pending', 'done'
-            const [albumSubFilter, setAlbumSubFilter] = useState('all'); // 'all', 'missing', 'repeated'
-
-            // Sincronización en la Nube
-            const [syncCode, setSyncCode] = useState(() => localStorage.getItem('panini_sync_code') || '');
-            const [collectorName, setCollectorName] = useState(() => localStorage.getItem('panini_collector_name') || '');
-            const [cloudStatus, setCloudStatus] = useState('local'); // 'local', 'syncing', 'error'
-            const [logs, setLogs] = useState(["Iniciando aplicación..."]);
-
-            // Comparador (Matchmaker)
-            const [friendCode, setFriendCode] = useState('');
-            const [friendStickers, setFriendStickers] = useState(null);
-            const [friendName, setFriendName] = useState('');
-
-            const dbInstance = useRef(null);
-            const unsubscribeFirestore = useRef(null);
-
-            const addLog = (msg) => {
-                setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
-            };
-
-            // Deducir el nombre dinámico del coleccionista
-            const displayName = useMemo(() => {
-                if (collectorName) return collectorName;
-                if (syncCode) {
-                    const cleanCode = syncCode.trim().toUpperCase();
-                    if (cleanCode.startsWith("MATEO")) return "Mateo";
-                    if (cleanCode.startsWith("MIRANDA")) return "Miranda";
-                    return cleanCode;
-                }
-                return "Coleccionista";
-            }, [collectorName, syncCode]);
-
-            // Guardar localmente siempre (Fail-safe)
-            useEffect(() => {
-                localStorage.setItem(APP_ID, JSON.stringify(stickers));
-            }, [stickers]);
-
-            // Inicialización de Firebase Compat
-            useEffect(() => {
-                const initFirebase = () => {
-                    addLog("Conectando con base de datos...");
-                    try {
-                        if (!window.firebase) {
-                            addLog("Esperando librerías...");
-                            setTimeout(initFirebase, 500);
-                            return;
-                        }
-
-                        if (window.firebase.apps.length === 0) {
-                            window.firebase.initializeApp(CONFIG_PERSONAL_FIREBASE);
-                        }
-                        
-                        dbInstance.current = window.firebase.firestore();
-                        setCloudStatus('syncing');
-                        addLog("Conectado con Firebase.");
-                    } catch (err) {
-                        console.error("Fallo de conexión a Firebase:", err);
-                        setCloudStatus('error');
-                        addLog(`Error de inicio: ${err.message}`);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            // Escuchar cambios de Firestore en tiempo real (Lectura)
-            useEffect(() => {
-                if (!syncCode || !dbInstance.current) return;
-
-                addLog(`Buscando canal: ${syncCode}...`);
-                const appId = "miranda-tracker-app";
-                
-                const docRef = dbInstance.current
-                    .collection('artifacts')
-                    .doc(appId)
-                    .collection('public')
-                    .doc('data')
-                    .collection('user_stickers')
-                    .doc(syncCode.trim().toUpperCase());
-
-                if (unsubscribeFirestore.current) unsubscribeFirestore.current();
-
-                setCloudStatus('syncing');
-                unsubscribeFirestore.current = docRef.onSnapshot((docSnap) => {
-                    if (docSnap.exists) {
-                        const data = docSnap.data();
-                        if (data) {
-                            if (data.stickers) setStickers(data.stickers);
-                            if (data.collectorName) setCollectorName(data.collectorName);
-                            addLog("¡Datos sincronizados!");
-                            setCloudStatus('syncing');
-                        }
-                    } else {
-                        addLog("Canal nuevo creado en la nube.");
-                    }
-                }, (err) => {
-                    console.error("Firestore sync failed:", err);
-                    setCloudStatus('error');
-                    addLog(`Error: Verifica las reglas de Firestore.`);
-                });
-
-                localStorage.setItem('panini_sync_code', syncCode.trim().toUpperCase());
-
-                return () => {
-                    if (unsubscribeFirestore.current) unsubscribeFirestore.current();
-                };
-            }, [syncCode]);
-
-            // Subir datos actualizados a la nube (Escritura)
-            const pushToCloud = async (newStickers, newName = collectorName) => {
-                if (!syncCode || !dbInstance.current) return;
-                
-                const appId = "miranda-tracker-app";
-                const docRef = dbInstance.current
-                    .collection('artifacts')
-                    .doc(appId)
-                    .collection('public')
-                    .doc('data')
-                    .collection('user_stickers')
-                    .doc(syncCode.trim().toUpperCase());
-                
-                try {
-                    await docRef.set({ 
-                        stickers: newStickers, 
-                        collectorName: newName,
-                        lastUpdated: new Date() 
-                    }, { merge: true });
-                    addLog("Cambio guardado en la nube.");
-                } catch (e) {
-                    console.error("Fallo al escribir en la nube:", e);
-                    addLog(`Error de guardado: ${e.message}`);
-                }
-            };
-
-            const stats = useMemo(() => {
-                const total = stickers.length;
-                const ownedCount = stickers.filter(s => s.count > 0).length;
-                const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                const progress = (ownedCount / total) * 100;
-                
-                const sectionsData = SECTION_LIST.map(section => {
-                    const group = stickers.filter(s => s.code === section.code);
-                    const obtained = group.filter(s => s.count > 0).length;
-                    const missing = section.count - obtained;
-                    const percent = (obtained / section.count) * 100;
-                    const repeated = group.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                    return { 
-                        ...section, 
-                        obtained, 
-                        missing,
-                        percent,
-                        repeated,
-                        isDone: obtained === section.count 
-                    };
-                });
-
-                const completedCount = sectionsData.filter(s => s.isDone).length;
-
-                // Cálculo de Estrategia de Compra
-                const ratioOwned = ownedCount / total;
-                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100; // Probabilidad en un sobre de 5 láminas
-
-                return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
-            }, [stickers]);
-
-            const updateCount = (id, delta) => {
-                const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
-                setStickers(next);
-                if (syncCode) pushToCloud(next);
-            };
-
-            const handleSaveConfig = () => {
-                localStorage.setItem('panini_collector_name', collectorName);
-                if (syncCode) pushToCloud(stickers, collectorName);
-                setShowSettings(false);
-                setNotification("Ajustes sincronizados");
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // Buscar datos de un amigo para comparar (Matchmaker)
-            const checkFriendSync = async () => {
-                if (!dbInstance.current || !friendCode) return;
-                const cleanFriendCode = friendCode.trim().toUpperCase();
-                addLog(`Buscando datos de: ${cleanFriendCode}...`);
-                
-                const appId = "miranda-tracker-app";
-                const docRef = dbInstance.current
-                    .collection('artifacts')
-                    .doc(appId)
-                    .collection('public')
-                    .doc('data')
-                    .collection('user_stickers')
-                    .doc(cleanFriendCode);
-
-                try {
-                    const docSnap = await docRef.get();
-                    if (docSnap.exists) {
-                        const data = docSnap.data();
-                        if (data && data.stickers) {
-                            setFriendStickers(data.stickers);
-                            setFriendName(data.collectorName || cleanFriendCode);
-                            setNotification(`¡Comparando con ${data.collectorName || cleanFriendCode}!`);
-                            addLog(`Conexión exitosa con ${cleanFriendCode}.`);
-                        }
-                    } else {
-                        setNotification("Código de amigo no encontrado.");
-                        setFriendStickers(null);
-                    }
-                } catch (err) {
-                    console.error("Error matching friend:", err);
-                    addLog("Error al buscar amigo.");
-                }
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // Cálculo cruzado de intercambios (Matchmaker local)
-            const exchangeAnalysis = useMemo(() => {
-                if (!friendStickers) return null;
-
-                const iCanGive = stickers.filter(mySticker => {
-                    const friendSticker = friendStickers.find(fs => fs.id === mySticker.id);
-                    return mySticker.count > 1 && friendSticker && friendSticker.count === 0;
-                }).map(s => s.id);
-
-                const friendCanGive = friendStickers.filter(friendSticker => {
-                    const mySticker = stickers.find(ms => ms.id === friendSticker.id);
-                    return friendSticker.count > 1 && mySticker && mySticker.count === 0;
-                }).map(s => s.id);
-
-                return { iCanGive, friendCanGive };
-            }, [stickers, friendStickers]);
-
-            const generateShareText = () => {
-                const mList = stickers.filter(s => s.count === 0).map(s => s.id).join(', ');
-                const rList = stickers.filter(s => s.count > 1).map(s => s.id).join(', ');
-                let t = `⚽ *ALBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
-                if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${rList || 'Ninguna'}\n`;
-                if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${mList}\n`;
-                return t + "\n_¡Intercambiemos!_";
-            };
-
-            const copyToClipboard = () => {
-                const el = document.createElement('textarea');
-                el.value = generateShareText(); document.body.appendChild(el);
-                el.select(); document.execCommand('copy');
-                document.body.removeChild(el);
-                setNotification("¡Lista copiada!");
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            const exportData = () => {
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(JSON.stringify(stickers));
-                const link = document.createElement('a');
-                link.setAttribute('href', dataUri);
-                link.setAttribute('download', `${syncCode || 'resguardo'}_panini_backup.json`);
-                link.click();
-                setNotification("¡Copia de seguridad guardada!");
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const parsed = JSON.parse(e.target.result);
-                        setStickers(parsed);
-                        if (syncCode) pushToCloud(parsed);
-                        setNotification("¡Progreso restaurado!");
-                    } catch (err) {
-                        setNotification("Error al leer el archivo.");
-                    }
-                    setTimeout(() => setNotification(null), 3000);
-                };
-                reader.readAsText(file);
-            };
-
-            // Filtrado de las selecciones en el Dashboard
-            const filteredDashboardSections = useMemo(() => {
-                return stats.sectionsData.filter(s => {
-                    if (dashboardFilter === 'pending') return !s.isDone;
-                    if (dashboardFilter === 'done') return s.isDone;
-                    return true;
-                });
-            }, [stats.sectionsData, dashboardFilter]);
-
-            // Filtrado de estampas en el Álbum con subfiltros inteligentes
-            const displayedStickers = useMemo(() => {
-                let list = stickers;
-                if (!filter) {
-                    list = stickers.filter(s => s.code === selectedSection);
-                } else {
-                    const search = filter.toUpperCase();
-                    list = stickers.filter(s => s.id.includes(search));
-                }
-
-                // Aplicar filtros adicionales de álbum
-                if (albumSubFilter === 'missing') return list.filter(s => s.count === 0);
-                if (albumSubFilter === 'repeated') return list.filter(s => s.count > 1);
-                return list;
-            }, [stickers, filter, selectedSection, albumSubFilter]);
-
-            const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
-
-            return (
-                <div className="min-h-screen pb-24">
-                    {/* Header */}
-                    <header className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white p-6 shadow-xl sticky top-0 z-50">
-                        <div className="max-w-4xl mx-auto flex justify-between items-center text-center sm:text-left">
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setShowSettings(true)} className="p-2 bg-white/10 hover:bg-white/20 rounded-lg shadow-inner transition-all flex items-center gap-2">
-                                    <Icon name="cloud" className={cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400 animate-pulse'} size={24} />
-                                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Ajustes</span>
-                                </button>
-                                <div>
-                                    <h1 className="text-xl font-black italic tracking-tighter">ÁLBUM DE {displayName.toUpperCase()}</h1>
-                                    <p className="text-blue-200 text-[8px] font-bold uppercase tracking-widest leading-none">
-                                        {syncCode ? `Canal Nube: ${syncCode}` : "SÓLO DISPOSITIVO"}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-3xl font-black italic">{stats.progress.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                    </header>
-
-                    {notification && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold text-[10px] uppercase border border-white/20 tracking-widest">
-                            {notification}
-                        </div>
-                    )}
-
-                    <main className="max-w-4xl mx-auto p-4 space-y-6">
-                        <nav className="flex bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border p-1 sticky top-28 z-40">
-                            {[
-                                { id: 'dashboard', label: 'Resumen', icon: 'trending-up' },
-                                { id: 'album', label: 'Álbum', icon: 'layout-grid' },
-                                { id: 'exchange', label: 'Compartir', icon: 'share-2' }
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                    <Icon name={tab.icon} size={18} />
-                                    <span className="text-[10px] uppercase font-black">{tab.label}</span>
-                                </button>
-                            ))}
-                        </nav>
-
-                        {/* DASHBOARD */}
-                        {activeTab === 'dashboard' && (
-                            <div className="space-y-6 animate-in fade-in zoom-in-95">
-                                <div className="bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row items-center gap-10">
-                                    <div className="relative w-40 h-44 flex items-center justify-center">
-                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
-                                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" strokeWidth="3.5" strokeDasharray={`${stats.progress}, 100`} className="progress-ring" strokeLinecap="round" />
-                                        </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center"><span className="text-4xl font-black text-slate-800 leading-none">{Math.round(stats.progress)}%</span></div>
-                                    </div>
-                                    <div className="flex-1 space-y-4 text-center md:text-left">
-                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">¡Vamos {displayName}!</h2>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-blue-50 rounded-3xl border border-blue-100 flex flex-col items-center md:items-start">
-                                                <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Stickers</p>
-                                                <p className="text-3xl font-black text-blue-700">{stats.ownedCount}</p>
-                                            </div>
-                                            <div className="p-4 bg-green-50 rounded-3xl border border-green-100 flex flex-col items-center md:items-start">
-                                                <p className="text-[10px] font-black text-green-400 uppercase mb-1">Países OK</p>
-                                                <p className="text-3xl font-black text-green-700">{stats.completedCount}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-3xl border shadow-sm text-center flex flex-col justify-center">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-slate-500">Repetidas totales</h4>
-                                        <p className="text-3xl font-black text-orange-600">{stats.repeatedCount}</p>
-                                        <p className="text-[9px] text-slate-400 uppercase font-bold mt-1 tracking-widest italic">Para cambiar con amigos</p>
-                                    </div>
-
-                                    {/* SECCIÓN ANALÍTICA: PROBABILIDAD DE SOBRES */}
-                                    <div className={`p-6 rounded-3xl border-2 flex flex-col justify-center text-center sm:text-left ${
-                                        stats.probNew > 40 ? 'bg-green-50/50 border-green-100 text-green-900' : 'bg-orange-50/50 border-orange-100 text-orange-900'
-                                    }`}>
-                                        <h4 className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1.5">
-                                            <Icon name="info" size={16} /> Probabilidad de Sobre Nuevo
-                                        </h4>
-                                        <p className="text-3xl font-black">{Math.round(stats.probNew)}%</p>
-                                        <p className="text-[10px] font-bold mt-1.5 leading-relaxed uppercase tracking-wide">
-                                            {stats.probNew > 40 
-                                                ? "¡Sigue abriendo sobres! La probabilidad de encontrar láminas nuevas aún es muy alta." 
-                                                : "¡Peligro de repetidas! Conviene frenar la compra y enfocarse en intercambios."
-                                            }
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* SECCIÓN: PROGRESO POR SELECCIONES */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
-                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4">
-                                        <div>
-                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                                                <Icon name="award" className="text-yellow-500" /> Progreso por Selecciones
-                                            </h4>
-                                            <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Avance individual, faltantes y repetidas</p>
-                                        </div>
-                                        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-                                            {[
-                                                { id: 'pending', label: 'Incompletas' },
-                                                { id: 'done', label: 'Listas' },
-                                                { id: 'all', label: 'Todas' }
-                                            ].map(btn => (
-                                                <button
-                                                    key={btn.id}
-                                                    onClick={() => setDashboardFilter(btn.id)}
-                                                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
-                                                        dashboardFilter === btn.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
-                                                    }`}
-                                                >
-                                                    {btn.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Grid de Avance por País */}
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[360px] overflow-y-auto pr-1 border rounded-2xl p-2 bg-slate-50/50 scrollbar-hide">
-                                        {filteredDashboardSections.map(s => (
-                                            <div key={s.code} className="bg-white p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between">
-                                                <div className="flex justify-between items-start gap-1">
-                                                    <span className="font-extrabold text-[12px] truncate">{s.flag} {s.name}</span>
-                                                    <span className="text-[9px] font-black text-slate-400 px-1 bg-slate-100 rounded">{s.code}</span>
-                                                </div>
-                                                <div className="flex justify-between items-end mt-3">
-                                                    <div>
-                                                        <div className="flex flex-wrap items-center gap-1">
-                                                            <p className="text-[10px] text-slate-500 font-bold leading-none">{s.obtained}/{s.count} un.</p>
-                                                            {s.repeated > 0 && (
-                                                                <span className="text-[8px] font-black text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-200 leading-none">
-                                                                    {s.repeated} rep
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {s.isDone ? (
-                                                            <p className="text-[9px] text-green-600 font-extrabold mt-1 uppercase tracking-tight">País Completo</p>
-                                                        ) : (
-                                                            <p className="text-[9px] text-red-500 font-extrabold mt-1 uppercase tracking-tight">Faltan: {s.missing}</p>
-                                                        )}
-                                                    </div>
-                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
-                                                        s.isDone ? 'text-green-700 bg-green-50 border border-green-200' : 'text-blue-700 bg-blue-50'
-                                                    }`}>
-                                                        {Math.round(s.percent)}%
-                                                    </span>
-                                                </div>
-                                                {/* Mini Barra de Progreso */}
-                                                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full transition-all duration-700 ${s.isDone ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                                        style={{ width: `${s.percent}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {filteredDashboardSections.length === 0 && (
-                                            <div className="col-span-full py-12 text-center text-slate-400 italic text-xs">
-                                                No hay selecciones en esta categoría actualmente.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* RESPALDO MANUAL (SÚPER SEGURO) */}
-                                <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
-                                    <div className="text-center md:text-left">
-                                        <h3 className="font-black text-lg">Copia de Seguridad de Emergencia</h3>
-                                        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">Guarda un archivo de respaldo en tu iPad por seguridad</p>
-                                    </div>
-                                    <div className="flex gap-2 w-full md:w-auto">
-                                        <button onClick={exportData} className="flex-1 md:flex-none bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase active:scale-95 transition-all">Exportar .json</button>
-                                        <label className="flex-1 md:flex-none bg-slate-700 px-6 py-3 rounded-xl text-[10px] font-black uppercase text-center cursor-pointer active:scale-95 transition-all">
-                                            Importar .json <input type="file" className="hidden" accept=".json" onChange={importData} /></label>
-                                    </div>
-                                </div>
-
-                                {/* PANEL DE DIAGNÓSTICO INTEGRADO */}
-                                <div className="bg-slate-900 text-slate-300 p-5 rounded-[2rem] border-4 border-slate-800 font-mono text-xs space-y-3 shadow-2xl">
-                                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                                        <span className="font-bold text-blue-400 flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                                            DIAGNÓSTICO EN TIEMPO REAL
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                                        <div><b>Base de Datos:</b> pani-i2026</div>
-                                        <div><b>Sincronización:</b> 
-                                            <span className={`ml-1 font-bold ${cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400'}`}>
-                                                {cloudStatus === 'syncing' ? '🟢 CONECTADO' : '🔴 LOCAL'}
-                                            </span>
-                                        </div>
-                                        <div><b>ID del Canal:</b> {syncCode || "SIN CLAVE"}</div>
-                                    </div>
-                                    <div className="border-t border-slate-800 pt-2 space-y-1">
-                                        <p className="text-[10px] text-slate-500 uppercase font-black">Historial:</p>
-                                        <div className="max-h-24 overflow-y-auto space-y-1 scrollbar-hide text-[10px] text-slate-400">
-                                            {logs.map((log, idx) => (
-                                                <p key={idx} className="leading-tight">{log}</p>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ÁLBUM */}
-                        {activeTab === 'album' && (
-                            <div className="space-y-4 animate-in fade-in">
-                                <div className="bg-white p-5 rounded-3xl border shadow-sm flex flex-col md:flex-row gap-3 items-end">
-                                    <div className="flex-1 w-full">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic">Seleccionar Selección</label>
-                                        <div className="relative">
-                                            <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none">
-                                                {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.flag} {s.code} - {s.name}</option>)}
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <Icon name="chevron-down" size={20} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="w-full md:w-56 relative text-sm">
-                                        <Icon name="search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input type="text" placeholder="MEX12, ARG10..." className="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" value={filter} onChange={(e) => setFilter(e.target.value.toUpperCase())} />
-                                    </div>
-                                </div>
-
-                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4 px-2">
-                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic leading-none">
-                                            <span>{currentSectionInfo.flag}</span> {currentSectionInfo.name} ({currentSectionInfo.code})
-                                        </h3>
-                                        <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-                                            {[
-                                                { id: 'all', label: 'Todas' },
-                                                { id: 'missing', label: 'Faltantes' },
-                                                { id: 'repeated', label: 'Repetidas' }
-                                            ].map(opt => (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setAlbumSubFilter(opt.id)}
-                                                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
-                                                        albumSubFilter === opt.id ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-slate-500'
-                                                    }`}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                                        {displayedStickers.map(sticker => (
-                                            <div key={sticker.id} className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center gap-3 h-36 ${sticker.count > 0 ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100/50' : 'bg-blue-50 border-blue-400 shadow-blue-100/50') : 'bg-white border-slate-100 opacity-60'} shadow-lg group hover:scale-105 active:scale-95`}>
-                                                <span className={`text-xl font-black tracking-tighter leading-none ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>{sticker.id}</span>
-                                                <div className="flex items-center gap-3">
-                                                    <button onClick={() => updateCount(sticker.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl border shadow-sm text-red-500 active:bg-red-50 transition-colors"><Icon name="minus" size={16}/></button>
-                                                    <span className="font-black text-xl w-4 text-center">{sticker.count}</span>
-                                                    <button onClick={() => updateCount(sticker.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:bg-green-50 transition-colors"><Icon name="plus" size={16}/></button>
-                                                </div>
-                                                {sticker.count > 1 && <div className="absolute -top-2 -right-2 bg-orange-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-xl border-2 border-white ring-4 ring-orange-50 animate-in zoom-in">x{sticker.count}</div>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {displayedStickers.length === 0 && (
-                                        <div className="py-20 text-center text-slate-400 italic text-sm">
-                                            No hay láminas en esta sección con el filtro seleccionado.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* COMPARTIR Y COMPARAR */}
-                        {activeTab === 'exchange' && (
-                            <div className="space-y-6 animate-in fade-in">
-                                {/* SECCIÓN: EL MATCHMAKER (COMPARTIR CON UN AMIGO) */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
-                                    <div>
-                                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                                            <Icon name="git-compare" className="text-indigo-600" /> Comparar Intercambio con un Amigo
-                                        </h4>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Cruza tus repetidas con lo que le falta a tu amigo automáticamente</p>
-                                    </div>
-                                    <div className="flex gap-2 max-w-md">
-                                        <input 
-                                            type="text" 
-                                            placeholder="CÓDIGO DE TU AMIGO (Ej: MATEO26)" 
-                                            value={friendCode}
-                                            onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
-                                            className="flex-1 px-4 py-3 border-2 rounded-2xl font-black uppercase text-xs outline-none focus:border-blue-500"
-                                        />
-                                        <button 
-                                            onClick={checkFriendSync}
-                                            className="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
-                                        >
-                                            Comparar
-                                        </button>
-                                    </div>
-
-                                    {exchangeAnalysis && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 card-enter">
-                                            <div className="p-4 bg-green-50 border border-green-100 rounded-3xl space-y-2">
-                                                <h5 className="font-extrabold text-xs text-green-800 uppercase tracking-tight flex items-center gap-1">
-                                                    🎁 Le puedes dar a {friendName}:
-                                                </h5>
-                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-green-700 bg-white/50 p-2.5 rounded-xl border border-green-200">
-                                                    {exchangeAnalysis.iCanGive.length > 0 
-                                                        ? exchangeAnalysis.iCanGive.join(', ') 
-                                                        : "No tienes repetidas que le falten."
-                                                    }
-                                                </div>
-                                                <p className="text-[9px] text-green-600 font-bold uppercase">{exchangeAnalysis.iCanGive.length} láminas listas para regalarle.</p>
-                                            </div>
-
-                                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-3xl space-y-2">
-                                                <h5 className="font-extrabold text-xs text-blue-800 uppercase tracking-tight flex items-center gap-1">
-                                                    🎯 {friendName} te puede dar a ti:
-                                                </h5>
-                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-blue-700 bg-white/50 p-2.5 rounded-xl border border-blue-200">
-                                                    {exchangeAnalysis.friendCanGive.length > 0 
-                                                        ? exchangeAnalysis.friendCanGive.join(', ') 
-                                                        : "Tu amigo no tiene repetidas que te falten."
-                                                    }
-                                                </div>
-                                                <p className="text-[9px] text-blue-600 font-bold uppercase">{exchangeAnalysis.friendCanGive.length} láminas listas para recibir.</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center">
-                                    <div className="flex justify-center gap-4 mb-8">
-                                        {[
-                                            {id: 'both', label: 'Todo', icon: 'list'},
-                                            {id: 'repeats', label: 'Repetidas', icon: 'refresh-ccw'},
-                                            {id: 'missing', label: 'Faltantes', icon: 'alert-circle'}
-                                        ].map(m => (
-                                            <button key={m.id} onClick={() => setShareMode(m.id)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}>
-                                                <Icon name={m.icon} />
-                                                {m.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
-                                        {generateShareText()}
-                                    </div>
-                                    <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
-                                        <Icon name="copy" size={28} className="group-hover:rotate-12 transition-transform" /> COPIAR LISTA
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    {/* VENTANA DE AJUSTES */}
-                    {showSettings && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[2.5rem] p-6 max-w-sm w-full shadow-2xl space-y-6 card-enter">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-2">
-                                        <Icon name="cloud-lightning" className="text-blue-600" />
-                                        <h3 className="text-lg font-black text-slate-800">Sincronización Familiar</h3>
-                                    </div>
-                                    <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600"><Icon name="x" /></button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Tu Código Personal</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="EJ: MIRANDA26" 
-                                            className="w-full px-4 py-3 border-2 rounded-2xl font-black uppercase text-sm outline-none focus:border-blue-500" 
-                                            value={syncCode}
-                                            onChange={(e) => setSyncCode(e.target.value.toUpperCase())}
-                                        />
-                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe tu código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Nombre del Coleccionista</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="EJ: Miranda o Mateo" 
-                                            className="w-full px-4 py-3 border-2 rounded-2xl font-black text-sm outline-none focus:border-blue-500" 
-                                            value={collectorName}
-                                            onChange={(e) => setCollectorName(e.target.value)}
-                                        />
-                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
-                                    </div>
-                                </div>
-
-                                <button onClick={handleSaveConfig} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
-                                    Guardar Ajustes
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.2</p></footer>
+    // Probabilidad en un sobre de 7 láminas
+    const ratioOwned = owned / total;
+    const probNew = (1 - Math.pow(ratioOwned, 7)) * 100;
+
+    return { total, owned, repeated, progress, probNew };
+  }, [stickers]);
+
+  // Handlers
+  const updateCount = (id, delta) => {
+    setStickers(prev => prev.map(s => {
+      if (s.id === id) {
+        return { ...s, count: Math.max(0, s.count + delta) };
+      }
+      return s;
+    }));
+  };
+
+  const copyToClipboard = (text) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    setNotification("¡Lista copiada!");
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const generateShareText = () => {
+    const missingStickers = stickers.filter(s => s.count === 0);
+    const repeatsStickers = stickers.filter(s => s.count > 1);
+
+    const missingText = formatStickersGrouped(missingStickers);
+    const repeatsText = formatStickersGrouped(repeatsStickers);
+    
+    let text = `⚽ *PANINI MIRANDA 2026* ⚽\n`;
+    if (shareMode === 'both' || shareMode === 'repeats') {
+      text += `\n✅ *TENGO REPETIDAS:* \n${repeatsText || 'Ninguna aún'}\n`;
+    }
+    if (shareMode === 'both' || shareMode === 'missing') {
+      text += `\n❌ *ME FALTAN:* \n${missingText || 'Ninguna'}\n`;
+    }
+    text += `\n_¡Intercambiemos!_`;
+    return text;
+  };
+
+  const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 shadow-lg sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black flex items-center gap-2">
+              <Trophy className="text-yellow-400" size={28} /> MIRANDA 2026
+            </h1>
+            <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">Sticker Collection Tracker</p>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-black">{stats.progress.toFixed(1)}%</span>
+            <div className="w-20 bg-white/20 h-1.5 rounded-full mt-1">
+              <div className="bg-yellow-400 h-full rounded-full transition-all duration-700" style={{ width: `${stats.progress}%` }} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {notification && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full shadow-2xl z-[60] animate-bounce font-bold">
+          {notification}
+        </div>
+      )}
+
+      <main className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Navigation */}
+        <div className="flex bg-white rounded-2xl shadow-sm border p-1.5 sticky top-28 z-40">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+            { id: 'album', label: 'Mi Álbum', icon: LayoutGrid },
+            { id: 'exchange', label: 'Compartir', icon: Share2 }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+                activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              <tab.icon size={20} />
+              <span className="text-xs uppercase">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* DASHBOARD */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Únicas</p>
+                <h3 className="text-3xl font-black text-blue-700">{stats.owned}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Repetidas</p>
+                <h3 className="text-3xl font-black text-orange-600">{stats.repeated}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Faltan</p>
+                <h3 className="text-3xl font-black text-red-600">{stats.total - stats.owned}</h3>
+              </div>
+              <div className="bg-white p-5 rounded-3xl border shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Prob. Nueva</p>
+                <h3 className="text-3xl font-black text-green-600">{Math.round(stats.probNew)}%</h3>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-3xl border-2 ${stats.probNew > 30 ? 'bg-green-50 border-green-100 text-green-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
+              <h4 className="font-bold mb-1 flex items-center gap-2"><Info size={20}/> Análisis de Colección</h4>
+              <p className="text-sm">
+                {stats.probNew > 30 
+                  ? "¡Sigue comprando! Tienes una alta probabilidad de encontrar láminas nuevas en cada sobre."
+                  : "Es momento de frenar la compra de sobres y enfocarse en INTERCAMBIOS para completar el álbum."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ALBUM VIEW */}
+        {activeTab === 'album' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white p-5 rounded-3xl border shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Seleccionar Selección</label>
+                  <div className="relative">
+                    <select 
+                      value={selectedSection}
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500"
+                    >
+                      {SECTION_LIST.map(s => (
+                        <option key={s.code} value={s.code}>
+                          {s.flag} {s.code} - {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  </div>
                 </div>
-            );
-        };
+                <div className="w-full md:w-64">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Busca MEX 12..." 
+                      className="w-full pl-12 pr-4 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+            <div className="bg-white p-6 rounded-3xl border shadow-sm">
+              <h3 className="text-2xl font-black mb-8 text-slate-800 flex items-center gap-3">
+                {currentSectionInfo.flag} {currentSectionInfo.name} ({currentSectionInfo.code})
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {stickers
+                  .filter(s => {
+                    if (filter) return s.id.toLowerCase().includes(filter.toLowerCase());
+                    return s.code === selectedSection;
+                  })
+                  .map(sticker => (
+                    <div 
+                      key={sticker.id}
+                      className={`relative p-4 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-between h-36 ${
+                        sticker.count > 0 
+                          ? (sticker.count > 1 ? 'bg-orange-50 border-orange-400 shadow-orange-100' : 'bg-blue-50 border-blue-400 shadow-blue-100') 
+                          : 'bg-white border-slate-100 opacity-60'
+                      } shadow-lg`}
+                    >
+                      <span className={`text-lg font-black ${sticker.count > 1 ? 'text-orange-800' : sticker.count > 0 ? 'text-blue-800' : 'text-slate-400'}`}>
+                        {sticker.id}
+                      </span>
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => updateCount(sticker.id, -1)}
+                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-red-500 active:scale-90"
+                        ><Minus size={16} /></button>
+                        <span className="font-black text-lg w-6 text-center">{sticker.count}</span>
+                        <button 
+                          onClick={() => updateCount(sticker.id, 1)}
+                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full border shadow-sm text-green-500 active:scale-90"
+                        ><Plus size={16} /></button>
+                      </div>
+
+                      {sticker.count > 1 && (
+                        <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-xl border-2 border-white">
+                          REP x{sticker.count - 1}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* EXCHANGE */}
+        {activeTab === 'exchange' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="bg-white p-8 rounded-[40px] border shadow-sm text-center">
+              <div className="flex justify-center gap-4 mb-8">
+                {[
+                  { id: 'both', label: 'Todo', icon: LayoutGrid },
+                  { id: 'repeats', label: 'Repetidas', icon: RefreshCcw },
+                  { id: 'missing', label: 'Faltantes', icon: AlertCircle }
+                ].map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => setShareMode(mode.id)}
+                    className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-bold ${
+                      shareMode === mode.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-400'
+                    }`}
+                  >
+                    <mode.icon size={24} />
+                    <span className="text-[10px] uppercase tracking-widest">{mode.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <div className="bg-slate-900 text-green-400 p-8 rounded-3xl font-mono text-left text-xs mb-8 max-h-72 overflow-y-auto border-4 border-slate-800 leading-relaxed shadow-inner">
+                  {generateShareText()}
+                </div>
+                <div className="absolute top-4 right-4 bg-slate-800 text-slate-400 px-3 py-1 rounded-lg text-[10px] uppercase font-bold tracking-tighter">
+                  Previsualización
+                </div>
+              </div>
+
+              <button 
+                onClick={() => copyToClipboard(generateShareText())}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg"
+              >
+                <Copy size={28} /> COPIAR PARA WHATSAPP
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 text-center z-50">
+        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">
+          Panini Sticker Album 2026 • Miranda Strategy v4.0
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
