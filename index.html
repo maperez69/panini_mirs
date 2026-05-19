@@ -287,13 +287,17 @@
                     if (docSnap.exists) {
                         const data = docSnap.data();
                         if (data && data.stickers) {
-                            const cloudOwned = data.stickers.filter(s => s.count > 0).length;
-                            const currentOwned = stickers.filter(s => s.count > 0).length;
-                            // Carga directa si la nube tiene datos sustanciales
-                            if (cloudOwned >= currentOwned) {
-                                setStickers(normalizeStickers(data.stickers));
-                                addLog("¡Datos sincronizados desde la nube!");
-                            }
+                            setStickers(currentLocal => {
+                                const cloudOwned = data.stickers.filter(s => s.count > 0).length;
+                                const currentOwned = currentLocal.filter(s => s.count > 0).length;
+                                
+                                // HEURÍSTICA DE RECUPERACIÓN AUTO-MEDICADA:
+                                // Si la nube tiene más progreso O si el iPad local marca erróneamente 100% (992 láminas) y la nube tiene progreso real parcial
+                                if (cloudOwned >= currentOwned || (currentOwned === 992 && cloudOwned > 0 && cloudOwned < 992)) {
+                                    return normalizeStickers(data.stickers);
+                                }
+                                return currentLocal;
+                            });
                             setCloudStatus('syncing');
                         }
                     }
@@ -430,6 +434,48 @@
                 }
             };
 
+            // DESCARGA MANUAL DE EMERGENCIA (Ignora el escudo de seguridad)
+            const forceDownloadFromCloud = async () => {
+                const targetCode = syncCode || inputSyncCode || 'MIRANDA26';
+                const cleanCode = targetCode.trim().toUpperCase();
+                addLog(`Forzando descarga desde canal ${cleanCode}...`);
+                setCloudStatus('syncing');
+                try {
+                    const docRef = dbInstance.current
+                        .collection('artifacts')
+                        .doc(activeAppId.current)
+                        .collection('public')
+                        .doc('data')
+                        .collection('user_stickers')
+                        .doc(cleanCode);
+                    
+                    const snap = await docRef.get();
+                    if (snap.exists) {
+                        const data = snap.data();
+                        if (data && data.stickers) {
+                            const normalized = normalizeStickers(data.stickers);
+                            setStickers(normalized);
+                            localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(normalized));
+                            localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(normalized));
+                            const owned = normalized.filter(s => s.count > 0).length;
+                            addLog(`¡Descarga forzada exitosa! Cargadas ${owned} láminas.`);
+                            setNotification("¡Sincronizado con éxito desde la Nube!");
+                        } else {
+                            addLog("El canal en la nube no contiene estampas.");
+                            setNotification("Canal vacío en la nube.");
+                        }
+                    } else {
+                        addLog("No se encontró el documento en la nube.");
+                        setNotification("No hay datos en este canal de la nube.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    addLog(`Error en descarga forzada: ${e.message}`);
+                    setNotification("Error al descargar de la nube.");
+                }
+                setTimeout(() => setNotification(null), 3000);
+            };
+
             // Inicializar escáner cuando Firebase esté listo
             useEffect(() => {
                 if (dbInstance.current) {
@@ -496,9 +542,13 @@
                 return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
             }, [stickers]);
 
-            // Deducir si existe una copia de seguridad con más estampas que la actual
+            // Deducir si existe una copia de seguridad con más estampas que la actual (Ignorar si el local es 100% erróneo)
             const betterBackups = useMemo(() => {
                 const currentOwned = stickers.filter(s => s.count > 0).length;
+                if (currentOwned === 992) {
+                    // Si el iPad marca 100% erróneo, mostramos cualquier copia que tenga progreso real menor a 992 pero mayor a 0
+                    return allBackups.filter(b => b.ownedCount < 992 && b.ownedCount > 0);
+                }
                 return allBackups.filter(b => b.ownedCount > currentOwned);
             }, [allBackups, stickers]);
 
@@ -656,7 +706,6 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
-            // Cálculo cruzado de intercambios (Matchmaker local)
             const exchangeAnalysis = useMemo(() => {
                 if (!friendStickers) return null;
 
@@ -790,7 +839,7 @@
                                     </div>
                                     <div>
                                         <h4 className="font-black text-sm uppercase tracking-wider">¡Detectamos copias con tu progreso!</h4>
-                                        <p className="text-[11px] text-orange-100 font-semibold mt-0.5">Encontramos copias de seguridad de Miranda/Mateo con hasta {Math.max(...betterBackups.map(b => b.ownedCount))} estampas guardadas.</p>
+                                        <p className="text-[11px] text-orange-100 font-semibold mt-0.5">Encontramos copias de seguridad de Miranda/Mateo con progreso real para tu iPad.</p>
                                     </div>
                                 </div>
                                 <button 
@@ -1220,6 +1269,15 @@
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
                                     </div>
                                     
+                                    {/* BOTÓN DIRECTO DE DESCARGA FORZADA DESDE FIREBASE */}
+                                    <button 
+                                        type="button"
+                                        onClick={forceDownloadFromCloud} 
+                                        className="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-2xl text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                        <Icon name="cloud-download" size={12} /> Traer datos de la Nube al iPad (Sincronizar)
+                                    </button>
+
                                     {/* Botón de Emergencia de Escaneo manual */}
                                     <button 
                                         type="button"
@@ -1346,7 +1404,7 @@
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.4</p></footer>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.5</p></footer>
                 </div>
             );
         };
