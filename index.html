@@ -49,57 +49,58 @@
             measurementId: "G-N2S2QD23T5"
         };
 
+        // Lista oficial con emojis blindados mediante secuencias de escape de JavaScript y códigos de FlagCDN
         const SECTION_LIST = [
-            { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
-            { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
-            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
-            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
-            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
-            { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
-            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
-            { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
-            { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
-            { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
-            { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
-            { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
-            { code: "SCO", name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", count: 20 },
-            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
-            { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
-            { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
-            { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
-            { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
-            { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
-            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
-            { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
-            { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
-            { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
-            { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
-            { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
-            { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
-            { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
-            { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
-            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
-            { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
-            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
-            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
-            { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
-            { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
-            { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
-            { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
-            { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
-            { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
-            { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
-            { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
-            { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
-            { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
-            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
-            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
-            { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
-            { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", count: 20 },
-            { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
-            { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
-            { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
-            { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
+            { code: "FWC", name: "FIFA World Cup", flag: "\uD83C\uDFC6", flagcdn: "fwc", count: 20 },
+            { code: "MEX", name: "México", flag: "\uD83C\uDDF2\uD83C\uDDFD", flagcdn: "mx", count: 20 },
+            { code: "RSA", name: "Sudáfrica", flag: "\uD83C\uDDFD\uD83C\uDDE6", flagcdn: "za", count: 20 },
+            { code: "KOR", name: "Corea del Sur", flag: "\uD83C\uDDF0\uD83C\uDDF7", flagcdn: "kr", count: 20 },
+            { code: "CZE", name: "Rep. Checa", flag: "\uD83C\uDDE8\uD83C\uDDFD", flagcdn: "cz", count: 20 },
+            { code: "CAN", name: "Canadá", flag: "\uD83C\uDDE4\uD83C\uDDE6", flagcdn: "ca", count: 20 },
+            { code: "BIH", name: "Bosnia & Herz.", flag: "\uD83C\uDDE7\uD83C\uDDE6", flagcdn: "ba", count: 20 },
+            { code: "QAT", name: "Qatar", flag: "\uD83C\uDDF0\uD83C\uDDF9", flagcdn: "qa", count: 20 },
+            { code: "SUI", name: "Suiza", flag: "\uD83C\uDDE8\uD83C\uDDED", flagcdn: "ch", count: 20 },
+            { code: "BRA", name: "Brasil", flag: "\uD83C\uDDE7\uD83C\uDDF7", flagcdn: "br", count: 20 },
+            { code: "MAR", name: "Marruecos", flag: "\uD83C\uDDF2\uD83C\uDDE6", flagcdn: "ma", count: 20 },
+            { code: "HAI", name: "Haití", flag: "\uD83C\uDDED\uD83C\uDDF9", flagcdn: "ht", count: 20 },
+            { code: "SCO", name: "Escocia", flag: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", flagcdn: "gb-sct", count: 20 },
+            { code: "USA", name: "Estados Unidos", flag: "\uD83C\uDDFA\uD83C\uDDF8", flagcdn: "us", count: 20 },
+            { code: "PAR", name: "Paraguay", flag: "\uD83C\uDDF5\uD83C\uDDFE", flagcdn: "py", count: 20 },
+            { code: "AUS", name: "Australia", flag: "\uD83C\uDDE6\uD83C\uDDFA", flagcdn: "au", count: 20 },
+            { code: "TUR", name: "Turquía", flag: "\uD83C\uDDF9\uD83C\uDDF7", flagcdn: "tr", count: 20 },
+            { code: "GER", name: "Alemania", flag: "\uD83C\uDDE9\uD83C\uDDEA", flagcdn: "de", count: 20 },
+            { code: "CUW", name: "Curazao", flag: "\uD83C\uDDE8\uD83C\uDDFC", flagcdn: "cw", count: 20 },
+            { code: "CIV", name: "Costa de Marfil", flag: "\uD83C\uDDE8\uD83C\uDDEE", flagcdn: "ci", count: 20 },
+            { code: "ECU", name: "Ecuador", flag: "\uD83C\uDDEA\uD83C\uDDE4", flagcdn: "ec", count: 20 },
+            { code: "NED", name: "Países Bajos", flag: "\uD83C\uDDF3\uD83C\uDDF1", flagcdn: "nl", count: 20 },
+            { code: "JPN", name: "Japón", flag: "\uD83C\uDDF0\uD83C\uDDF5", flagcdn: "jp", count: 20 },
+            { code: "SWE", name: "Suecia", flag: "\uD83C\uDDF8\uD83C\uDDF9", flagcdn: "se", count: 20 },
+            { code: "TUN", name: "Túnez", flag: "\uD83C\uDDF9\uD83C\uDDF3", flagcdn: "tn", count: 20 },
+            { code: "BEL", name: "Bélgica", flag: "\uD83C\uDDE7\uD83C\uDDEA", flagcdn: "be", count: 20 },
+            { code: "EGY", name: "Egipto", flag: "\uD83C\uDDEA\uD83C\uDDEC", flagcdn: "eg", count: 20 },
+            { code: "IRN", name: "Irán", flag: "\uD83C\uDDEE\uD83C\uDDF7", flagcdn: "ir", count: 20 },
+            { code: "NZL", name: "Nueva Zelanda", flag: "\uD83C\uDDF3\uD83C\uDDFF", flagcdn: "nz", count: 20 },
+            { code: "ESP", name: "España", flag: "\uD83C\uDDEA\uD83C\uDDF8", flagcdn: "es", count: 20 },
+            { code: "CPV", name: "Cabo Verde", flag: "\uD83C\uDDE8\uD83C\uDDFB", flagcdn: "cv", count: 20 },
+            { code: "KSA", name: "Arabia Saudita", flag: "\uD83C\uDDF8\uD83C\uDDE6", flagcdn: "sa", count: 20 },
+            { code: "URU", name: "Uruguay", flag: "\uD83C\uDDF5\uD83C\uDDFE", flagcdn: "uy", count: 20 },
+            { code: "FRA", name: "Francia", flag: "\uD83C\uDDEB\uD83C\uDDF7", flagcdn: "fr", count: 20 },
+            { code: "SEN", name: "Senegal", flag: "\uD83C\uDDF8\uD83C\uDDF3", flagcdn: "sn", count: 20 },
+            { code: "IRQ", name: "Irak", flag: "\uD83C\uDDEE\uD83C\uDDF6", flagcdn: "iq", count: 20 },
+            { code: "NOR", name: "Noruega", flag: "\uD83C\uDDF3\uD83C\uDDF4", flagcdn: "no", count: 20 },
+            { code: "ARG", name: "Argentina", flag: "\uD83C\uDDE6\uD83C\uDDF7", flagcdn: "ar", count: 20 },
+            { code: "ALG", name: "Argelia", flag: "\uD83C\uDDE9\uD83C\uDDFF", flagcdn: "dz", count: 20 },
+            { code: "AUT", name: "Austria", flag: "\uD83C\uDDE6\uD83C\uDDF9", flagcdn: "at", count: 20 },
+            { code: "JOR", name: "Jordania", flag: "\uD83C\uDDF1\uD83C\uDDF4", flagcdn: "jo", count: 20 },
+            { code: "POR", name: "Portugal", flag: "\uD83C\uDDF5\uD83C\uDDF9", flagcdn: "pt", count: 20 },
+            { code: "COD", name: "R.D. Congo", flag: "\uD83C\uDDE8\uD83C\uDDF3", flagcdn: "cd", count: 20 },
+            { code: "UZB", name: "Uzbekistán", flag: "\uD83C\uDDFB\uD83C\uDDFF", flagcdn: "uz", count: 20 },
+            { code: "COL", name: "Colombia", flag: "\uD83C\uDDF2\uD83C\uDDF4", flagcdn: "co", count: 20 },
+            { code: "ENG", name: "Inglaterra", flag: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F", flagcdn: "gb-eng", count: 20 },
+            { code: "CRO", name: "Croacia", flag: "\uD83C\uDDED\uD83C\uDDF7", flagcdn: "hr", count: 20 },
+            { code: "GHA", name: "Ghana", flag: "\uD83C\uDDEC\uD83C\uDDED", flagcdn: "gh", count: 20 },
+            { code: "PAN", name: "Panamá", flag: "\uD83C\uDDF5\uD83C\uDDE6", flagcdn: "pa", count: 20 },
+            { code: "CC", name: "Coca-Cola", flag: "\uD83E\uDDF4", flagcdn: "🥤", count: 12 }
         ];
 
         const APP_ID = "miranda-tracker-v10-prod";
@@ -291,8 +292,8 @@
                                 const cloudOwned = data.stickers.filter(s => s.count > 0).length;
                                 const currentOwned = currentLocal.filter(s => s.count > 0).length;
                                 
-                                // HEURÍSTICA DE RECUPERACIÓN AUTO-MEDICADA:
-                                // Si la nube tiene más progreso O si el iPad local marca erróneamente 100% (992 láminas) y la nube tiene progreso real parcial
+                                // HEURÍSTICA DE RECUPERACIÓN:
+                                // Si la nube tiene más progreso O si el iPad local marca erróneamente 100% y la nube tiene progreso real parcial
                                 if (cloudOwned >= currentOwned || (currentOwned === 992 && cloudOwned > 0 && cloudOwned < 992)) {
                                     return normalizeStickers(data.stickers);
                                 }
@@ -474,6 +475,29 @@
                     setNotification("Error al descargar de la nube.");
                 }
                 setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad multiplataforma completa)
+            const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
+                const section = SECTION_LIST.find(s => s.code === sectionCode);
+                if (!section) return emojiFallback;
+                
+                // Elementos especiales que no son países en FlagCDN
+                if (sectionCode === 'FWC' || sectionCode === 'CC') {
+                    return <span className="inline-block mr-2 text-sm leading-none">{section.flag}</span>;
+                }
+                
+                // Mostrar hermosa bandera SVG de FlagCDN con fallback
+                return (
+                    <img 
+                        src={`https://flagcdn.com/w40/${section.flagcdn}.png`} 
+                        alt={section.name} 
+                        className={className}
+                        onError={(e) => {
+                            e.target.style.display = 'none'; // Fallback silencioso si hay algún error
+                        }}
+                    />
+                );
             };
 
             // Inicializar escáner cuando Firebase esté listo
@@ -914,7 +938,7 @@
                                     </div>
                                 </div>
 
-                                {/* SECCIÓN EXCLUSIVA DE WHATSAPP INLINE (SÚPER FOOLPROOF) */}
+                                {/* SECCIÓN EXCLUSIVA DE WHATSAPP INLINE */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
                                     <div className="flex items-center gap-2 border-b pb-3">
                                         <div className="bg-green-100 text-green-700 p-2 rounded-xl">
@@ -981,7 +1005,10 @@
                                         {filteredDashboardSections.map(s => (
                                             <div key={s.code} className="bg-white p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between">
                                                 <div className="flex justify-between items-start gap-1">
-                                                    <span className="font-extrabold text-[12px] truncate">{s.flag} {s.name}</span>
+                                                    <span className="font-extrabold text-[12px] truncate flex items-center">
+                                                        {renderFlagImg(s.code, s.flag)}
+                                                        <span className="ml-1">{s.name}</span>
+                                                    </span>
                                                     <span className="text-[9px] font-black text-slate-400 px-1 bg-slate-100 rounded">{s.code}</span>
                                                 </div>
                                                 <div className="flex justify-between items-end mt-3">
@@ -1071,12 +1098,15 @@
                                 <div className="bg-white p-5 rounded-3xl border shadow-sm flex flex-col md:flex-row gap-3 items-end">
                                     <div className="flex-1 w-full">
                                         <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic">Seleccionar Selección</label>
-                                        <div className="relative">
-                                            <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none">
-                                                {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.flag} {s.code} - {s.name}</option>)}
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <Icon name="chevron-down" size={20} />
+                                        <div className="relative flex items-center gap-3">
+                                            {renderFlagImg(selectedSection, currentSectionInfo.flag, "w-10 h-8 rounded-lg shadow-sm border")}
+                                            <div className="relative flex-1">
+                                                <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none pr-10">
+                                                    {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                    <Icon name="chevron-down" size={20} />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1089,7 +1119,8 @@
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4 px-2">
                                         <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic leading-none">
-                                            <span>{currentSectionInfo.flag}</span> {currentSectionInfo.name} ({currentSectionInfo.code})
+                                            {renderFlagImg(selectedSection, currentSectionInfo.flag, "w-8 h-6 rounded shadow-sm")}
+                                            <span>{currentSectionInfo.name} ({currentSectionInfo.code})</span>
                                         </h3>
                                         <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
                                             {[
@@ -1213,7 +1244,7 @@
                         )}
                     </main>
 
-                    {/* VENTANA DE AJUSTES */}
+                    {/* VENTANA DE AJUSTES SIMPLIFICADA (SIN BOTONES REDUNDANTES) */}
                     {showSettings && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[2.5rem] p-6 max-w-sm w-full shadow-2xl space-y-6 card-enter">
@@ -1268,36 +1299,6 @@
                                         />
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
                                     </div>
-                                    
-                                    {/* BOTÓN DIRECTO DE DESCARGA FORZADA DESDE FIREBASE */}
-                                    <button 
-                                        type="button"
-                                        onClick={forceDownloadFromCloud} 
-                                        className="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-2xl text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon name="cloud-download" size={12} /> Traer datos de la Nube al iPad (Sincronizar)
-                                    </button>
-
-                                    {/* Botón de Emergencia de Escaneo manual */}
-                                    <button 
-                                        type="button"
-                                        onClick={runFullRecoveryScan} 
-                                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-2.5 rounded-2xl text-[10px] uppercase border border-slate-200 transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon name="search" size={12} /> Buscar respaldos perdidos en la nube
-                                    </button>
-
-                                    {/* BOTÓN DIRECTO DE IMPORTACIÓN WHATSAPP */}
-                                    <button 
-                                        type="button"
-                                        onClick={() => {
-                                            setShowSettings(false);
-                                            setShowRecoveryModal(true);
-                                        }} 
-                                        className="w-full bg-green-50 hover:bg-green-100 text-green-700 font-black py-2.5 rounded-2xl text-[10px] uppercase border border-green-200 transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon name="clipboard" size={12} /> Restaurar con lista de WhatsApp
-                                    </button>
                                 </div>
 
                                 <button onClick={handleSaveConfig} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
