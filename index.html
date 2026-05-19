@@ -49,15 +49,16 @@
             measurementId: "G-N2S2QD23T5"
         };
 
+        // Lista oficial con emojis de bandera blindados en Unicode hexadecimal de 2 letras
         const SECTION_LIST = [
             { code: "FWC", name: "FIFA World Cup", flag: "\uD83C\uDFC6", flagcdn: "fwc", count: 20 },
             { code: "MEX", name: "México", flag: "\uD83C\uDDF2\uD83C\uDDFD", flagcdn: "mx", count: 20 },
-            { code: "RSA", name: "Sudáfrica", flag: "\uD83C\uDDFD\uD83C\uDDE6", flagcdn: "za", count: 20 },
+            { code: "RSA", name: "Sudáfrica", flag: "\uD83C\uDDFF\uD83C\uDDE6", flagcdn: "za", count: 20 },
             { code: "KOR", name: "Corea del Sur", flag: "\uD83C\uDDF0\uD83C\uDDF7", flagcdn: "kr", count: 20 },
-            { code: "CZE", name: "Rep. Checa", flag: "\uD83C\uDDE8\uD83C\uDDFD", flagcdn: "cz", count: 20 },
-            { code: "CAN", name: "Canadá", flag: "\uD83C\uDDE4\uD83C\uDDE6", flagcdn: "ca", count: 20 },
+            { code: "CZE", name: "Rep. Checa", flag: "\uD83C\uDDE8\uD83C\uDDFF", flagcdn: "cz", count: 20 },
+            { code: "CAN", name: "Canadá", flag: "\uD83C\uDDE8\uD83C\uDDE6", flagcdn: "ca", count: 20 },
             { code: "BIH", name: "Bosnia & Herz.", flag: "\uD83C\uDDE7\uD83C\uDDE6", flagcdn: "ba", count: 20 },
-            { code: "QAT", name: "Qatar", flag: "\uD83C\uDDF0\uD83C\uDDF9", flagcdn: "qa", count: 20 },
+            { code: "QAT", name: "Qatar", flag: "\uD83C\uDDF6\uD83C\uDDE6", flagcdn: "qa", count: 20 },
             { code: "SUI", name: "Suiza", flag: "\uD83C\uDDE8\uD83C\uDDED", flagcdn: "ch", count: 20 },
             { code: "BRA", name: "Brasil", flag: "\uD83C\uDDE7\uD83C\uDDF7", flagcdn: "br", count: 20 },
             { code: "MAR", name: "Marruecos", flag: "\uD83C\uDDF2\uD83C\uDDE6", flagcdn: "ma", count: 20 },
@@ -70,10 +71,10 @@
             { code: "GER", name: "Alemania", flag: "\uD83C\uDDE9\uD83C\uDDEA", flagcdn: "de", count: 20 },
             { code: "CUW", name: "Curazao", flag: "\uD83C\uDDE8\uD83C\uDDFC", flagcdn: "cw", count: 20 },
             { code: "CIV", name: "Costa de Marfil", flag: "\uD83C\uDDE8\uD83C\uDDEE", flagcdn: "ci", count: 20 },
-            { code: "ECU", name: "Ecuador", flag: "\uD83C\uDDEA\uD83C\uDDE4", flagcdn: "ec", count: 20 },
+            { code: "ECU", name: "Ecuador", flag: "\uD83C\uDDEA\uD83C\uDDE8", flagcdn: "ec", count: 20 },
             { code: "NED", name: "Países Bajos", flag: "\uD83C\uDDF3\uD83C\uDDF1", flagcdn: "nl", count: 20 },
-            { code: "JPN", name: "Japón", flag: "\uD83C\uDDF0\uD83C\uDDF5", flagcdn: "jp", count: 20 },
-            { code: "SWE", name: "Suecia", flag: "\uD83C\uDDF8\uD83C\uDDF9", flagcdn: "se", count: 20 },
+            { code: "JPN", name: "Japón", flag: "\uD83C\uDDEF\uD83C\uDDF5", flagcdn: "jp", count: 20 },
+            { code: "SWE", name: "Suecia", flag: "\uD83C\uDDF8\uD83C\uDDEA", flagcdn: "se", count: 20 },
             { code: "TUN", name: "Túnez", flag: "\uD83C\uDDF9\uD83C\uDDF3", flagcdn: "tn", count: 20 },
             { code: "BEL", name: "Bélgica", flag: "\uD83C\uDDE7\uD83C\uDDEA", flagcdn: "be", count: 20 },
             { code: "EGY", name: "Egipto", flag: "\uD83C\uDDEA\uD83C\uDDEC", flagcdn: "eg", count: 20 },
@@ -82,7 +83,7 @@
             { code: "ESP", name: "España", flag: "\uD83C\uDDEA\uD83C\uDDF8", flagcdn: "es", count: 20 },
             { code: "CPV", name: "Cabo Verde", flag: "\uD83C\uDDE8\uD83C\uDDFB", flagcdn: "cv", count: 20 },
             { code: "KSA", name: "Arabia Saudita", flag: "\uD83C\uDDF8\uD83C\uDDE6", flagcdn: "sa", count: 20 },
-            { code: "URU", name: "Uruguay", flag: "\uD83C\uDDF5\uD83C\uDDFE", flagcdn: "uy", count: 20 },
+            { code: "URU", name: "Uruguay", flag: "\uD83C\uDDFA\uD83C\uDDFE", flagcdn: "uy", count: 20 },
             { code: "FRA", name: "Francia", flag: "\uD83C\uDDEB\uD83C\uDDF7", flagcdn: "fr", count: 20 },
             { code: "SEN", name: "Senegal", flag: "\uD83C\uDDF8\uD83C\uDDF3", flagcdn: "sn", count: 20 },
             { code: "IRQ", name: "Irak", flag: "\uD83C\uDDEE\uD83C\uDDF6", flagcdn: "iq", count: 20 },
@@ -90,16 +91,16 @@
             { code: "ARG", name: "Argentina", flag: "\uD83C\uDDE6\uD83C\uDDF7", flagcdn: "ar", count: 20 },
             { code: "ALG", name: "Argelia", flag: "\uD83C\uDDE9\uD83C\uDDFF", flagcdn: "dz", count: 20 },
             { code: "AUT", name: "Austria", flag: "\uD83C\uDDE6\uD83C\uDDF9", flagcdn: "at", count: 20 },
-            { code: "JOR", name: "Jordania", flag: "\uD83C\uDDF1\uD83C\uDDF4", flagcdn: "jo", count: 20 },
+            { code: "JOR", name: "Jordania", flag: "\uD83C\uDDEF\uD83C\uDDF4", flagcdn: "jo", count: 20 },
             { code: "POR", name: "Portugal", flag: "\uD83C\uDDF5\uD83C\uDDF9", flagcdn: "pt", count: 20 },
-            { code: "COD", name: "R.D. Congo", flag: "\uD83C\uDDE8\uD83C\uDDF3", flagcdn: "cd", count: 20 },
-            { code: "UZB", name: "Uzbekistán", flag: "\uD83C\uDDFB\uD83C\uDDFF", flagcdn: "uz", count: 20 },
-            { code: "COL", name: "Colombia", flag: "\uD83C\uDDF2\uD83C\uDDF4", flagcdn: "co", count: 20 },
+            { code: "COD", name: "R.D. Congo", flag: "\uD83C\uDDE8\uD83C\uDDE9", flagcdn: "cd", count: 20 },
+            { code: "UZB", name: "Uzbekistán", flag: "\uD83C\uDDFA\uD83C\uDDFF", flagcdn: "uz", count: 20 },
+            { code: "COL", name: "Colombia", flag: "\uD83C\uDDE8\uD83C\uDDF4", flagcdn: "co", count: 20 },
             { code: "ENG", name: "Inglaterra", flag: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F", flagcdn: "gb-eng", count: 20 },
             { code: "CRO", name: "Croacia", flag: "\uD83C\uDDED\uD83C\uDDF7", flagcdn: "hr", count: 20 },
             { code: "GHA", name: "Ghana", flag: "\uD83C\uDDEC\uD83C\uDDED", flagcdn: "gh", count: 20 },
             { code: "PAN", name: "Panamá", flag: "\uD83C\uDDF5\uD83C\uDDE6", flagcdn: "pa", count: 20 },
-            { code: "CC", name: "Coca-Cola", flag: "\uD83E\uDDF4", flagcdn: "🥤", count: 12 }
+            { code: "CC", name: "Coca-Cola", flag: "\uD83E\uDD64", flagcdn: "🥤", count: 12 }
         ];
 
         const APP_ID = "miranda-tracker-v10-prod";
@@ -114,7 +115,7 @@
             return initial;
         };
 
-        // Agrupar estampas por país y formatear el texto para WhatsApp
+        // Agrupar estampas por país y formatear el texto para WhatsApp (Con emojis seguros)
         const formatStickersGrouped = (stickerList) => {
             const grouped = {};
             stickerList.forEach(s => {
@@ -433,7 +434,49 @@
                 }
             };
 
-            // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad multiplataforma completa)
+            // DESCARGA MANUAL DE EMERGENCIA (Ignora el escudo de seguridad)
+            const forceDownloadFromCloud = async () => {
+                const targetCode = syncCode || inputSyncCode || 'MIRANDA26';
+                const cleanCode = targetCode.trim().toUpperCase();
+                addLog(`Forzando descarga desde canal ${cleanCode}...`);
+                setCloudStatus('syncing');
+                try {
+                    const docRef = dbInstance.current
+                        .collection('artifacts')
+                        .doc(activeAppId.current)
+                        .collection('public')
+                        .doc('data')
+                        .collection('user_stickers')
+                        .doc(cleanCode);
+                    
+                    const snap = await docRef.get();
+                    if (snap.exists) {
+                        const data = snap.data();
+                        if (data && data.stickers) {
+                            const normalized = normalizeStickers(data.stickers);
+                            setStickers(normalized);
+                            localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(normalized));
+                            localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(normalized));
+                            const owned = normalized.filter(s => s.count > 0).length;
+                            addLog(`¡Descarga forzada exitosa! Cargadas ${owned} láminas.`);
+                            setNotification("¡Sincronizado con éxito desde la Nube!");
+                        } else {
+                            addLog("El canal en la nube no contiene estampas.");
+                            setNotification("Canal vacío en la nube.");
+                        }
+                    } else {
+                        addLog("No se encontró el documento en la nube.");
+                        setNotification("No hay datos en este canal de la nube.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    addLog(`Error en descarga forzada: ${e.message}`);
+                    setNotification("Error al descargar de la nube.");
+                }
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad completa)
             const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
                 const section = SECTION_LIST.find(s => s.code === sectionCode);
                 if (!section) return emojiFallback;
@@ -1075,8 +1118,9 @@
                                     <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
                                         {generateShareText()}
                                     </div>
-                                    <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg group">
-                                        <Icon name="copy" size={28} className="group-hover:rotate-12 transition-transform" /> COPIAR LISTA
+                                    <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg"
+                                    >
+                                        <Icon name="copy" size={28} /> COPIAR LISTA
                                     </button>
                                 </div>
                             </div>
