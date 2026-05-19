@@ -49,7 +49,6 @@
             measurementId: "G-N2S2QD23T5"
         };
 
-        // Lista oficial con emojis blindados mediante secuencias de escape de JavaScript y códigos de FlagCDN
         const SECTION_LIST = [
             { code: "FWC", name: "FIFA World Cup", flag: "\uD83C\uDFC6", flagcdn: "fwc", count: 20 },
             { code: "MEX", name: "México", flag: "\uD83C\uDDF2\uD83C\uDDFD", flagcdn: "mx", count: 20 },
@@ -199,7 +198,6 @@
 
             // Almacén de copias de seguridad encontradas
             const [allBackups, setAllBackups] = useState([]);
-            const [whatsappText, setWhatsappText] = useState('');
 
             // Estados temporales del Modal de Ajustes
             const [inputSyncCode, setInputSyncCode] = useState(syncCode);
@@ -435,48 +433,6 @@
                 }
             };
 
-            // DESCARGA MANUAL DE EMERGENCIA (Ignora el escudo de seguridad)
-            const forceDownloadFromCloud = async () => {
-                const targetCode = syncCode || inputSyncCode || 'MIRANDA26';
-                const cleanCode = targetCode.trim().toUpperCase();
-                addLog(`Forzando descarga desde canal ${cleanCode}...`);
-                setCloudStatus('syncing');
-                try {
-                    const docRef = dbInstance.current
-                        .collection('artifacts')
-                        .doc(activeAppId.current)
-                        .collection('public')
-                        .doc('data')
-                        .collection('user_stickers')
-                        .doc(cleanCode);
-                    
-                    const snap = await docRef.get();
-                    if (snap.exists) {
-                        const data = snap.data();
-                        if (data && data.stickers) {
-                            const normalized = normalizeStickers(data.stickers);
-                            setStickers(normalized);
-                            localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(normalized));
-                            localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(normalized));
-                            const owned = normalized.filter(s => s.count > 0).length;
-                            addLog(`¡Descarga forzada exitosa! Cargadas ${owned} láminas.`);
-                            setNotification("¡Sincronizado con éxito desde la Nube!");
-                        } else {
-                            addLog("El canal en la nube no contiene estampas.");
-                            setNotification("Canal vacío en la nube.");
-                        }
-                    } else {
-                        addLog("No se encontró el documento en la nube.");
-                        setNotification("No hay datos en este canal de la nube.");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    addLog(`Error en descarga forzada: ${e.message}`);
-                    setNotification("Error al descargar de la nube.");
-                }
-                setTimeout(() => setNotification(null), 3000);
-            };
-
             // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad multiplataforma completa)
             const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
                 const section = SECTION_LIST.find(s => s.code === sectionCode);
@@ -643,89 +599,6 @@
                 } else {
                     setNotification("Código de amigo no encontrado.");
                     setFriendStickers(null);
-                }
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // IMPORTADOR INTELIGENTE DUAL DE WHATSAPP (FALTANTES Y REPETIDAS JUNTAS)
-            const importFromText = (rawText) => {
-                try {
-                    const cleanText = rawText.toUpperCase();
-                    const hasMissing = cleanText.includes("FALTAN") || cleanText.includes("FALTA") || cleanText.includes("❌");
-                    const hasRepeats = cleanText.includes("REPETIDAS") || cleanText.includes("TENGO") || cleanText.includes("REPETIDA") || cleanText.includes("✅");
-                    
-                    let tempStickers = generateInitialStickers();
-                    
-                    // Si el mensaje contiene una lista de faltantes, asumimos por lógica de conjuntos 
-                    // que todo lo que NO está en la lista de faltantes ya lo tenemos (count = 1).
-                    if (hasMissing) {
-                        tempStickers = tempStickers.map(s => ({ ...s, count: 1 }));
-                    } else {
-                        // Si el mensaje es puramente de repetidas (no menciona faltantes),
-                        // preservamos todo el progreso que el usuario ya tenga en el iPad.
-                        tempStickers = JSON.parse(JSON.stringify(stickers));
-                    }
-
-                    const lines = rawText.split('\n');
-                    let currentBlock = 'none'; // 'missing' o 'repeats'
-
-                    lines.forEach(line => {
-                        const upperLine = line.toUpperCase().trim();
-                        if (!upperLine) return;
-
-                        // Detectamos en qué sección del mensaje de WhatsApp nos encontramos
-                        if (upperLine.includes("REPETIDAS") || upperLine.includes("TENGO") || upperLine.includes("REPETIDA") || upperLine.includes("✅")) {
-                            currentBlock = 'repeats';
-                            return;
-                        }
-                        if (upperLine.includes("FALTAN") || upperLine.includes("FALTA") || upperLine.includes("ME FALTAN") || upperLine.includes("❌")) {
-                            currentBlock = 'missing';
-                            return;
-                        }
-
-                        // Asignación por defecto en caso de que no haya encabezado claro
-                        if (currentBlock === 'none') {
-                            if (hasMissing) {
-                                currentBlock = 'missing';
-                            } else if (hasRepeats) {
-                                currentBlock = 'repeats';
-                            } else {
-                                return;
-                            }
-                        }
-
-                        SECTION_LIST.forEach(section => {
-                            const codeRegex = new RegExp(`\\b${section.code}\\b`);
-                            if (codeRegex.test(upperLine)) {
-                                const remainingText = upperLine.replace(section.code, '');
-                                const numbers = remainingText.match(/\d+/g);
-                                if (numbers) {
-                                    numbers.forEach(numStr => {
-                                        const num = parseInt(numStr, 10);
-                                        if (num >= 1 && num <= section.count) {
-                                            const stickerId = `${section.code}${num}`;
-                                            const idx = tempStickers.findIndex(s => s.id === stickerId);
-                                            if (idx !== -1) {
-                                                if (currentBlock === 'missing') {
-                                                    tempStickers[idx].count = 0;
-                                                } else if (currentBlock === 'repeats') {
-                                                    // Si es repetida, garantizamos que tenga la del álbum (1) más mínimo una repetida
-                                                    tempStickers[idx].count = Math.max(2, tempStickers[idx].count + 1);
-                                                }
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    });
-
-                    setStickers(tempStickers);
-                    if (syncCode) pushToCloud(tempStickers);
-                    setNotification("¡Álbum cargado con repetidas y faltantes!");
-                } catch (err) {
-                    console.error("WhatsApp text parse error:", err);
-                    setNotification("Error al procesar el texto.");
                 }
                 setTimeout(() => setNotification(null), 3000);
             };
@@ -936,40 +809,6 @@
                                             }
                                         </p>
                                     </div>
-                                </div>
-
-                                {/* SECCIÓN EXCLUSIVA DE WHATSAPP INLINE */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
-                                    <div className="flex items-center gap-2 border-b pb-3">
-                                        <div className="bg-green-100 text-green-700 p-2 rounded-xl">
-                                            <Icon name="clipboard-list" size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Recuperar con texto de WhatsApp</h4>
-                                            <p className="text-[9px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Pega tu lista guardada aquí abajo y recupera todo tu álbum al instante</p>
-                                        </div>
-                                    </div>
-                                    <textarea 
-                                        rows="4"
-                                        placeholder="Pega aquí tu lista copiada de WhatsApp (ej: ME FALTAN... MEX 🇲🇽: 1, 5, 11 o TENGO REPETIDAS...)"
-                                        className="w-full p-3 border rounded-2xl font-mono text-[10px] bg-slate-50 outline-none focus:border-blue-500"
-                                        value={whatsappText}
-                                        onChange={(e) => setWhatsappText(e.target.value)}
-                                    ></textarea>
-                                    <button 
-                                        onClick={() => {
-                                            if (whatsappText.trim()) {
-                                                importFromText(whatsappText);
-                                                setWhatsappText('');
-                                            } else {
-                                                setNotification("Por favor, pega el texto primero.");
-                                                setTimeout(() => setNotification(null), 3000);
-                                            }
-                                        }}
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl text-[10px] uppercase shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="check" size={14} /> Procesar y Cargar desde WhatsApp
-                                    </button>
                                 </div>
 
                                 {/* SECCIÓN: PROGRESO POR SELECCIONES */}
@@ -1308,7 +1147,7 @@
                         </div>
                     )}
 
-                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS */}
+                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS (SIN WHATSAPP TEXT IMPORTER) */}
                     {showRecoveryModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl space-y-6 card-enter">
@@ -1318,14 +1157,14 @@
                                             <Icon name="life-buoy" className="text-orange-600" />
                                             Centro de Recuperación de Estampas
                                         </h3>
-                                        <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">Selecciona la copia que deseas restaurar o pega tu respaldo</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">Selecciona la copia que deseas restaurar</p>
                                     </div>
                                     <button onClick={() => setShowRecoveryModal(false)} className="text-slate-400 hover:text-slate-600"><Icon name="x" /></button>
                                 </div>
 
                                 {/* LISTA DE COPIAS ENCONTRADAS POR ESCÁNER */}
-                                {allBackups.length > 0 && (
-                                    <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 scrollbar-hide">
+                                {allBackups.length > 0 ? (
+                                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
                                         <p className="text-[9px] font-black text-slate-400 uppercase leading-none">Copias detectadas en tu base de datos:</p>
                                         {allBackups.map((backup, idx) => (
                                             <div key={idx} className="bg-slate-50 p-4 rounded-2xl border flex justify-between items-center hover:border-blue-300 transition-all shadow-sm">
@@ -1366,40 +1205,14 @@
                                             </div>
                                         ))}
                                     </div>
+                                ) : (
+                                    <div className="py-8 text-center text-slate-400 italic text-sm">
+                                        No se han detectado respaldos automáticos aún. Usa la Copia de Seguridad de abajo.
+                                    </div>
                                 )}
                                 
-                                {/* SECCIÓN DE WHATSAPP TEXT IMPORTER */}
-                                <div className="border-t pt-4 space-y-3">
-                                    <h4 className="font-extrabold text-xs text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
-                                        <Icon name="clipboard" className="text-green-600" size={14} />
-                                        ¿Tienes tu lista de WhatsApp? Pégala aquí:
-                                    </h4>
-                                    <textarea 
-                                        rows="4"
-                                        placeholder="Pega aquí tu lista copiada de WhatsApp (ej: ME FALTAN... MEX 🇲🇽: 1, 5, 11 o TENGO REPETIDAS...)"
-                                        className="w-full p-3 border rounded-xl font-mono text-[10px] bg-slate-50 outline-none focus:border-blue-500"
-                                        value={whatsappText}
-                                        onChange={(e) => setWhatsappText(e.target.value)}
-                                    ></textarea>
-                                    <button 
-                                        onClick={() => {
-                                            if (whatsappText.trim()) {
-                                                importFromText(whatsappText);
-                                                setWhatsappText('');
-                                                setShowRecoveryModal(false);
-                                            } else {
-                                                setNotification("Por favor, pega el texto primero.");
-                                                setTimeout(() => setNotification(null), 3000);
-                                            }
-                                        }}
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-2.5 rounded-xl text-[10px] uppercase shadow-md transition-all active:scale-95"
-                                    >
-                                        Procesar y Cargar desde WhatsApp
-                                    </button>
-                                </div>
-                                
                                 <div className="p-4 bg-blue-50 rounded-2xl border text-xs text-blue-800 leading-relaxed font-semibold">
-                                    💡 <b>Consejo familiar:</b> Puedes cargar cualquiera de estas copias o pegar tu lista de WhatsApp. Al hacerlo, el progreso actual del dispositivo será reemplazado por el de tu respaldo.
+                                    💡 <b>Consejo familiar:</b> Puedes cargar cualquiera de estas copias de seguridad de la lista. Al hacerlo, el progreso actual del dispositivo será reemplazado de inmediato por el de tu respaldo.
                                 </div>
                             </div>
                         </div>
