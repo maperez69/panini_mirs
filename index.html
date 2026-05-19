@@ -114,7 +114,7 @@
             return initial;
         };
 
-        // Función auxiliar para agrupar estampas por país y formatear el texto igual a la imagen
+        // Agrupar estampas por país y formatear el texto para WhatsApp
         const formatStickersGrouped = (stickerList) => {
             const grouped = {};
             stickerList.forEach(s => {
@@ -136,20 +136,36 @@
             return formattedLines.join('\n');
         };
 
+        // Convertir y normalizar listas antiguas al formato estándar
+        const normalizeStickers = (loadedList) => {
+            const countMap = {};
+            loadedList.forEach(s => {
+                const cleanId = s.id.replace(/\s+/g, '').toUpperCase();
+                countMap[cleanId] = (countMap[cleanId] || 0) + s.count;
+            });
+
+            const fresh = generateInitialStickers();
+            return fresh.map(s => {
+                const cleanId = s.id.replace(/\s+/g, '').toUpperCase();
+                return {
+                    ...s,
+                    count: countMap[cleanId] || 0
+                };
+            });
+        };
+
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
         const App = () => {
-            // Intentamos recuperar del almacenamiento local usando ambas claves posibles históricas
             const [stickers, setStickers] = useState(() => {
                 const saved1 = localStorage.getItem("miranda-sticker-tracker-2026");
                 const saved2 = localStorage.getItem("miranda-tracker-v10-prod");
                 const saved = saved1 || saved2;
                 
                 if (saved) return JSON.parse(saved);
-                
                 return generateInitialStickers();
             });
 
@@ -159,6 +175,7 @@
             const [notification, setNotification] = useState(null);
             const [shareMode, setShareMode] = useState('both');
             const [showSettings, setShowSettings] = useState(false);
+            const [showRecoveryModal, setShowRecoveryModal] = useState(false);
             const [dashboardFilter, setDashboardFilter] = useState('pending'); // 'all', 'pending', 'done'
             const [albumSubFilter, setAlbumSubFilter] = useState('all'); // 'all', 'missing', 'repeated'
 
@@ -178,7 +195,10 @@
                 }
             });
 
-            // Estados temporales del Modal de Ajustes (Evita reconexión a cada tecla escrita)
+            // Almacén de copias de seguridad encontradas
+            const [allBackups, setAllBackups] = useState([]);
+
+            // Estados temporales del Modal de Ajustes
             const [inputSyncCode, setInputSyncCode] = useState(syncCode);
             const [inputCollectorName, setInputCollectorName] = useState(collectorName);
 
@@ -194,17 +214,6 @@
             const addLog = (msg) => {
                 setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
-
-            // Guardamos el código en el historial local para acceso rápido
-            useEffect(() => {
-                if (syncCode) {
-                    setSyncHistory(prev => {
-                        const next = [syncCode, ...prev.filter(x => x !== syncCode)].slice(0, 5);
-                        localStorage.setItem('panini_sync_history', JSON.stringify(next));
-                        return next;
-                    });
-                }
-            }, [syncCode]);
 
             // Nombre dinámico en pantalla
             const displayName = useMemo(() => {
@@ -259,7 +268,7 @@
                 initFirebase();
             }, []);
 
-            // Escuchador en tiempo real dinámico
+            // Escuchar cambios de Firestore en tiempo real (Lectura)
             const startRealTimeListener = (appId, cleanCode) => {
                 if (unsubscribeFirestore.current) unsubscribeFirestore.current();
                 
@@ -276,8 +285,13 @@
                     if (docSnap.exists) {
                         const data = docSnap.data();
                         if (data && data.stickers) {
-                            setStickers(data.stickers);
-                            addLog("¡Datos sincronizados en tiempo real!");
+                            const cloudOwned = data.stickers.filter(s => s.count > 0).length;
+                            const currentOwned = stickers.filter(s => s.count > 0).length;
+                            // Carga directa si la nube tiene datos sustanciales
+                            if (cloudOwned >= currentOwned) {
+                                setStickers(normalizeStickers(data.stickers));
+                                addLog("¡Datos sincronizados desde la nube!");
+                            }
                             setCloudStatus('syncing');
                         }
                     }
@@ -288,82 +302,141 @@
                 });
             };
 
-            // Escáner inteligente y recuperación automática de cajitas anteriores de Firebase
-            const scanAndSync = async (code) => {
-                const cleanCode = code.trim().toUpperCase();
-                addLog(`Iniciando escaneo de recuperación para: ${cleanCode}...`);
-                
-                // Las rutas que la app pudo haber usado anteriormente en Firebase
-                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
-                let bestData = null;
-                let bestPath = 'miranda-tracker-app';
-                let bestTime = 0;
-
-                for (const path of pathsToTry) {
+            // Escaneo Profundo de LocalStorage para buscar claves legacy
+            const scanAllLocalStorage = () => {
+                const backups = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
                     try {
-                        const docRef = dbInstance.current
-                            .collection('artifacts')
-                            .doc(path)
-                            .collection('public')
-                            .doc('data')
-                            .collection('user_stickers')
-                            .doc(cleanCode);
-                            
-                        const snap = await docRef.get();
-                        if (snap.exists) {
-                            const data = snap.data();
-                            if (data && data.stickers) {
-                                const countOwned = data.stickers.filter(s => s.count > 0).length;
-                                addLog(`¡Registro hallado en [${path}] con ${countOwned} láminas!`);
-                                const updatedTime = data.lastUpdated ? data.lastUpdated.toDate().getTime() : 1;
-                                if (updatedTime > bestTime) {
-                                    bestTime = updatedTime;
-                                    bestData = data;
-                                    bestPath = path;
+                        const val = localStorage.getItem(key);
+                        if (val && (val.startsWith('[') || val.startsWith('{'))) {
+                            const parsed = JSON.parse(val);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                const sample = parsed[0];
+                                if (sample && typeof sample === 'object' && ('id' in sample || 'num' in sample) && 'count' in sample) {
+                                    const ownedCount = parsed.filter(s => s.count > 0).length;
+                                    if (ownedCount > 0) {
+                                        backups.push({
+                                            type: 'local',
+                                            source: `iPad (Memoria: ${key})`,
+                                            key: key,
+                                            stickers: parsed,
+                                            ownedCount: ownedCount,
+                                            repeatedCount: parsed.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0)
+                                        });
+                                    }
                                 }
                             }
-                        } else {
-                            addLog(`Sin datos en la ruta [${path}]`);
                         }
-                    } catch (e) {
-                        console.error(`Error escaneando ruta ${path}:`, e);
-                        addLog(`Bloqueo en [${path}]: Reglas de Firestore activas.`);
+                    } catch (e) {}
+                }
+                return backups;
+            };
+
+            // Escaneo Profundo de Firestore buscando en todas las cajitas y códigos posibles (Agresivo)
+            const scanFirestoreBackups = async (codes) => {
+                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
+                const foundBackups = [];
+                const uniqueCodes = [...new Set(codes.map(c => c.trim().toUpperCase()))].filter(Boolean);
+
+                for (const path of pathsToTry) {
+                    for (const code of uniqueCodes) {
+                        try {
+                            const docRef = dbInstance.current
+                                .collection('artifacts')
+                                .doc(path)
+                                .collection('public')
+                                .doc('data')
+                                .collection('user_stickers')
+                                .doc(code);
+                            
+                            const snap = await docRef.get();
+                            if (snap.exists) {
+                                const data = snap.data();
+                                if (data && data.stickers) {
+                                    const ownedCount = data.stickers.filter(s => s.count > 0).length;
+                                    if (ownedCount > 0) {
+                                        foundBackups.push({
+                                            type: 'cloud',
+                                            source: `Nube (Canal ${code} en [${path}])`,
+                                            appId: path,
+                                            docId: code,
+                                            stickers: data.stickers,
+                                            collectorName: data.collectorName || code,
+                                            ownedCount: ownedCount,
+                                            repeatedCount: data.stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0),
+                                            lastUpdated: data.lastUpdated ? data.lastUpdated.toDate().toLocaleString() : 'Desconocida'
+                                        });
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`Error escaneando ${path} -> ${code}:`, e);
+                        }
                     }
                 }
+                return foundBackups;
+            };
 
-                if (bestData) {
-                    addLog(`Cargando datos recuperados desde canal [${bestPath}].`);
-                    setStickers(bestData.stickers);
-                    if (bestData.collectorName) setCollectorName(bestData.collectorName);
-                    activeAppId.current = bestPath;
-                    setCloudStatus('syncing');
-                    startRealTimeListener(bestPath, cleanCode);
-                } else {
-                    addLog("No se encontraron respaldos en la nube. Buscando progreso local...");
-                    const localSaved = localStorage.getItem("miranda-sticker-tracker-2026") || localStorage.getItem("miranda-tracker-v10-prod");
-                    if (localSaved) {
-                        const parsed = JSON.parse(localSaved);
-                        const localOwned = parsed.filter(s => s.count > 0).length;
-                        if (localOwned > 0) {
-                            addLog(`¡Progreso local detectado (${localOwned} láminas)! Sincronizando con la nube...`);
-                            setStickers(parsed);
-                            activeAppId.current = 'miranda-tracker-app';
-                            await pushToCloud(parsed, collectorName);
-                            startRealTimeListener('miranda-tracker-app', cleanCode);
-                            return;
-                        }
+            // Ejecutar el Escáner de Recuperación Familiar al Inicio o cambio de código
+            const runFullRecoveryScan = async () => {
+                addLog("Iniciando escáner de recuperación...");
+                const localBackups = scanAllLocalStorage();
+                
+                // Generar lista de códigos potenciales a buscar
+                const codesToScan = [
+                    syncCode,
+                    inputSyncCode,
+                    'MIRANDA26',
+                    'MIARNDA26',
+                    'MIRANDA2026',
+                    'MIRA26',
+                    'MATEO26',
+                    'SOBRINO26',
+                    'SANTI26',
+                    'SANTIAGO26',
+                    ...syncHistory
+                ].filter(Boolean);
+
+                try {
+                    const cloudBackups = await scanFirestoreBackups(codesToScan);
+                    const combined = [...localBackups, ...cloudBackups];
+                    
+                    // Remover duplicados por conteo idéntico
+                    const seen = new Set();
+                    const unique = combined.filter(b => {
+                        const key = `${b.type}-${b.ownedCount}-${b.repeatedCount}`;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                    
+                    setAllBackups(unique);
+                    addLog(`Búsqueda completa: ¡Halladas ${unique.length} copias con datos!`);
+                    
+                    // Si encontramos una versión en la nube con datos que sea la mejor, proponerla
+                    const cloudBest = unique.find(b => b.type === 'cloud' && b.ownedCount > 0);
+                    if (cloudBest && stickers.filter(s => s.count > 0).length === 0) {
+                        addLog(`Autocargando mejor copia de seguridad desde: ${cloudBest.source}`);
+                        setStickers(normalizeStickers(cloudBest.stickers));
+                        setCollectorName(cloudBest.collectorName);
+                        setSyncCode(cloudBest.docId);
                     }
-                    addLog("Iniciando canal nuevo vacío en la nube.");
-                    activeAppId.current = 'miranda-tracker-app';
-                    startRealTimeListener('miranda-tracker-app', cleanCode);
+                } catch (e) {
+                    setAllBackups(localBackups);
+                    addLog("Recuperación completa basada solo en copias locales.");
                 }
             };
 
-            // Escuchar cambios de Firestore
+            // Inicializar escáner cuando Firebase esté listo
             useEffect(() => {
-                if (!syncCode || !dbInstance.current) return;
-                scanAndSync(syncCode);
-            }, [syncCode, dbInstance.current]);
+                if (dbInstance.current) {
+                    runFullRecoveryScan();
+                    if (syncCode) {
+                        startRealTimeListener(activeAppId.current, syncCode.trim().toUpperCase());
+                    }
+                }
+            }, [dbInstance.current, syncCode]);
 
             // Subir datos actualizados a la nube (Escritura)
             const pushToCloud = async (newStickers, newName = collectorName) => {
@@ -421,6 +494,12 @@
                 return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
             }, [stickers]);
 
+            // Deducir si existe una copia de seguridad con más estampas que la actual
+            const betterBackups = useMemo(() => {
+                const currentOwned = stickers.filter(s => s.count > 0).length;
+                return allBackups.filter(b => b.ownedCount > currentOwned);
+            }, [allBackups, stickers]);
+
             const updateCount = (id, delta) => {
                 const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
                 setStickers(next);
@@ -435,6 +514,13 @@
                 
                 localStorage.setItem('panini_sync_code', cleanCode);
                 localStorage.setItem('panini_collector_name', inputCollectorName);
+                
+                // Actualizar historial local de códigos
+                setSyncHistory(prev => {
+                    const next = [cleanCode, ...prev.filter(x => x !== cleanCode)].slice(0, 5);
+                    localStorage.setItem('panini_sync_history', JSON.stringify(next));
+                    return next;
+                });
                 
                 setShowSettings(false);
                 setNotification("Ajustes guardados");
@@ -481,6 +567,74 @@
                 } else {
                     setNotification("Código de amigo no encontrado.");
                     setFriendStickers(null);
+                }
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // Importar progreso pegando texto copiado de WhatsApp
+            const importFromText = (rawText) => {
+                try {
+                    const cleanText = rawText.toUpperCase();
+                    const hasMissing = cleanText.includes("FALTAN") || cleanText.includes("FALTA");
+                    
+                    let tempStickers = generateInitialStickers();
+                    
+                    if (hasMissing) {
+                        // Si pegó la lista con los que faltan, asumimos que tiene todos los que NO aparecen en esa lista
+                        tempStickers = tempStickers.map(s => ({ ...s, count: 1 }));
+                    } else {
+                        // De lo contrario, preserva las marcas del dispositivo y solo suma las repetidas
+                        tempStickers = JSON.parse(JSON.stringify(stickers));
+                    }
+
+                    const lines = rawText.split('\n');
+                    let currentBlock = 'none';
+
+                    lines.forEach(line => {
+                        const upperLine = line.toUpperCase();
+                        if (upperLine.includes("REPETIDAS") || upperLine.includes("TENGO") || upperLine.includes("REPETIDA")) {
+                            currentBlock = 'repeats';
+                            return;
+                        }
+                        if (upperLine.includes("FALTAN") || upperLine.includes("FALTA")) {
+                            currentBlock = 'missing';
+                            return;
+                        }
+
+                        if (currentBlock === 'none') return;
+
+                        SECTION_LIST.forEach(section => {
+                            const codeRegex = new RegExp(`\\b${section.code}\\b`);
+                            if (codeRegex.test(upperLine)) {
+                                const remainingText = upperLine.replace(section.code, '');
+                                const numbers = remainingText.match(/\d+/g);
+                                if (numbers) {
+                                    numbers.forEach(numStr => {
+                                        const num = parseInt(numStr, 10);
+                                        if (num >= 1 && num <= section.count) {
+                                            const stickerId = `${section.code}${num}`;
+                                            const idx = tempStickers.findIndex(s => s.id === stickerId);
+                                            if (idx !== -1) {
+                                                if (currentBlock === 'missing') {
+                                                    tempStickers[idx].count = 0;
+                                                } else if (currentBlock === 'repeats') {
+                                                    // Registra que la tiene y añade la cantidad de repetidas
+                                                    tempStickers[idx].count = Math.max(2, tempStickers[idx].count + 1);
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    });
+
+                    setStickers(tempStickers);
+                    if (syncCode) pushToCloud(tempStickers);
+                    setNotification("¡Álbum restaurado desde texto!");
+                } catch (err) {
+                    console.error("WhatsApp text parse error:", err);
+                    setNotification("Error al procesar el texto.");
                 }
                 setTimeout(() => setNotification(null), 3000);
             };
@@ -609,6 +763,28 @@
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
+                        
+                        {/* BANNER INTERACTIVO DE AUTORECUPERACIÓN */}
+                        {betterBackups.length > 0 && (
+                            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 text-white p-5 rounded-[2rem] shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 animate-in slide-in-from-top duration-500">
+                                <div className="flex items-center gap-4 text-center md:text-left">
+                                    <div className="bg-white/20 p-3 rounded-2xl animate-pulse">
+                                        <Icon name="search" size={28} className="text-yellow-200" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-sm uppercase tracking-wider">¡Detectamos copias con tu progreso!</h4>
+                                        <p className="text-[11px] text-orange-100 font-semibold mt-0.5">Encontramos copias de seguridad de Miranda/Mateo con hasta {Math.max(...betterBackups.map(b => b.ownedCount))} estampas guardadas.</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setShowRecoveryModal(true)} 
+                                    className="bg-white text-orange-700 px-6 py-3 rounded-2xl text-[11px] font-black uppercase shadow-lg hover:bg-slate-50 transition-all w-full md:w-auto"
+                                >
+                                    Ver y Restaurar
+                                </button>
+                            </div>
+                        )}
+
                         <nav className="flex bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border p-1 sticky top-28 z-40">
                             {[
                                 { id: 'dashboard', label: 'Resumen', icon: 'trending-up' },
@@ -992,6 +1168,15 @@
                                         />
                                         <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
                                     </div>
+                                    
+                                    {/* Botón de Emergencia de Escaneo manual */}
+                                    <button 
+                                        type="button"
+                                        onClick={runFullRecoveryScan} 
+                                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-2 rounded-2xl text-[10px] uppercase border border-slate-200 transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                        <Icon name="search" size={12} /> Buscar respaldos perdidos en la nube
+                                    </button>
                                 </div>
 
                                 <button onClick={handleSaveConfig} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
@@ -1001,7 +1186,99 @@
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.3</p></footer>
+                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS */}
+                    {showRecoveryModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl space-y-6 card-enter">
+                                <div className="flex justify-between items-start border-b pb-4">
+                                    <div>
+                                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                            <Icon name="life-buoy" className="text-orange-600" />
+                                            Centro de Recuperación de Estampas
+                                        </h3>
+                                        <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">Selecciona la copia que deseas restaurar</p>
+                                    </div>
+                                    <button onClick={() => setShowRecoveryModal(false)} className="text-slate-400 hover:text-slate-600"><Icon name="x" /></button>
+                                </div>
+
+                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 scrollbar-hide">
+                                    {allBackups.map((backup, idx) => (
+                                        <div key={idx} className="bg-slate-50 p-4 rounded-2xl border flex justify-between items-center hover:border-blue-300 transition-all shadow-sm">
+                                            <div className="space-y-1">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                                    backup.type === 'local' ? 'bg-teal-100 text-teal-700' : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                    {backup.type === 'local' ? 'Dispositivo (iPad/Cel)' : 'Nube (Google)'}
+                                                </span>
+                                                <h4 className="font-extrabold text-sm text-slate-700 mt-1">{backup.source}</h4>
+                                                <p className="text-[10px] text-slate-400 font-medium">
+                                                    {backup.type === 'cloud' && `Último cambio: ${backup.lastUpdated}`}
+                                                </p>
+                                                <div className="flex gap-3 text-[10px] font-bold text-slate-500 mt-1 uppercase">
+                                                    <span>✅ {backup.ownedCount} únicas</span>
+                                                    <span>🔸 {backup.repeatedCount} repetidas</span>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    setStickers(normalizeStickers(backup.stickers));
+                                                    if (backup.type === 'cloud') {
+                                                        setSyncCode(backup.docId);
+                                                        setCollectorName(backup.collectorName);
+                                                        localStorage.setItem('panini_sync_code', backup.docId);
+                                                        localStorage.setItem('panini_collector_name', backup.collectorName);
+                                                    } else {
+                                                        if (syncCode) pushToCloud(backup.stickers);
+                                                    }
+                                                    setShowRecoveryModal(false);
+                                                    setNotification("¡Progreso restaurado correctamente!");
+                                                    setTimeout(() => setNotification(null), 3000);
+                                                }} 
+                                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-100 transition-all"
+                                            >
+                                                Cargar
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                {/* NUEVA SECCIÓN DE WHATSAPP TEXT IMPORTER */}
+                                <div className="border-t pt-4 space-y-3">
+                                    <h4 className="font-extrabold text-xs text-slate-700 uppercase tracking-tight flex items-center gap-1.5">
+                                        <Icon name="clipboard" className="text-green-600" size={14} />
+                                        ¿Tienes tu lista de WhatsApp? Pégala aquí:
+                                    </h4>
+                                    <textarea 
+                                        rows="3"
+                                        placeholder="Pega aquí tu lista copiada de WhatsApp (ej: ME FALTAN... MEX 🇲🇽: 1, 5)"
+                                        className="w-full p-3 border rounded-xl font-mono text-[10px] bg-slate-50 outline-none focus:border-blue-500"
+                                        id="whatsapp-import-box"
+                                    ></textarea>
+                                    <button 
+                                        onClick={() => {
+                                            const val = document.getElementById('whatsapp-import-box')?.value;
+                                            if (val) {
+                                                importFromText(val);
+                                                setShowRecoveryModal(false);
+                                            } else {
+                                                setNotification("Por favor, pega el texto primero.");
+                                                setTimeout(() => setNotification(null), 3000);
+                                            }
+                                        }}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-2.5 rounded-xl text-[10px] uppercase shadow-md transition-all"
+                                    >
+                                        Procesar y Cargar desde WhatsApp
+                                    </button>
+                                </div>
+                                
+                                <div className="p-4 bg-blue-50 rounded-2xl border text-xs text-blue-800 leading-relaxed font-semibold">
+                                    💡 <b>Consejo familiar:</b> Puedes cargar cualquiera de estas copias. Al hacerlo, el progreso actual del iPad será reemplazado por el de la copia seleccionada. No te preocupes, siempre puedes volver a esta pantalla si te equivocas.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.4</p></footer>
                 </div>
             );
         };
