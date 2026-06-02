@@ -229,6 +229,31 @@
                 setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
 
+            const pushToCloud = async (newStickers, newName = collectorName) => {
+                if (!syncCode || !dbInstance.current) return;
+                
+                const cleanCode = syncCode.trim().toUpperCase();
+                const docRef = dbInstance.current
+                    .collection('artifacts')
+                    .doc(activeAppId.current)
+                    .collection('public')
+                    .doc('data')
+                    .collection('user_stickers')
+                    .doc(cleanCode);
+                
+                try {
+                    await docRef.set({ 
+                        stickers: newStickers, 
+                        collectorName: newName,
+                        lastUpdated: new Date() 
+                    }, { merge: true });
+                    addLog("Cambio guardado en la nube.");
+                } catch (e) {
+                    console.error("Fallo al escribir en la nube:", e);
+                    addLog(`Error de guardado: ${e.message}`);
+                }
+            };
+
             // Nombre dinámico en pantalla
             const displayName = useMemo(() => {
                 if (collectorName) return collectorName;
@@ -343,17 +368,29 @@
             };
 
             const resolveConflict = async (useLocal) => {
-                if (useLocal) {
-                    await pushToCloud(conflictState.localData);
-                    setStickers(conflictState.localData);
-                    addLog("Conflicto resuelto: Usado el progreso de este dispositivo.");
-                    setNotification("¡Nube actualizada!");
-                } else {
-                    setStickers(conflictState.cloudData);
-                    addLog("Conflicto resuelto: Descargado el progreso de la Nube.");
-                    setNotification("¡Dispositivo actualizado!");
-                }
+                addLog(`Resolviendo conflicto: Seleccionado ${useLocal ? 'Local' : 'Nube'}`);
+                
+                // Guardamos los datos seleccionados
+                const targetStickers = useLocal ? conflictState.localData : conflictState.cloudData;
+                
+                // Cerramos la ventana emergente al instante para dar respuesta visual inmediata
                 setConflictState({ show: false, localCount: 0, cloudCount: 0, cloudData: null, localData: null });
+                
+                if (targetStickers) {
+                    setStickers(targetStickers);
+                    if (useLocal) {
+                        setNotification("Subiendo progreso a la nube...");
+                        try {
+                            await pushToCloud(targetStickers);
+                            setNotification("¡Nube actualizada con éxito!");
+                        } catch (err) {
+                            addLog(`Error al subir: ${err.message}`);
+                            setNotification("Error de red. Guardado localmente.");
+                        }
+                    } else {
+                        setNotification("¡Dispositivo sincronizado con éxito!");
+                    }
+                }
                 setTimeout(() => setNotification(null), 3000);
             };
 
@@ -464,6 +501,9 @@
                     setAllBackups(unique);
                     addLog(`Búsqueda completa: ¡Halladas ${unique.length} copias con datos!`);
                     
+                    // Abrimos el modal para que el usuario elija
+                    setShowRecoveryModal(true);
+
                     const cloudBest = unique.find(b => b.type === 'cloud' && b.ownedCount > 0);
                     if (cloudBest && stickers.filter(s => s.count > 0).length === 0) {
                         addLog(`Autocargando mejor copia de seguridad desde: ${cloudBest.source}`);
@@ -474,6 +514,7 @@
                 } catch (e) {
                     setAllBackups(localBackups);
                     addLog("Recuperación completa basada solo en copias locales.");
+                    setShowRecoveryModal(true);
                 }
             };
 
@@ -1174,7 +1215,7 @@
                                         }} 
                                         className="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-2xl text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1.5"
                                     >
-                                        <Icon name="cloud-download" size={12} /> Forzar Descarga desde la Nube
+                                        <Icon name="cloud-download" size={12} /> Traer datos de la Nube al iPad (Sincronizar)
                                     </button>
 
                                     {/* Botón de Emergencia de Escaneo manual */}
@@ -1283,7 +1324,7 @@
                                     {/* Opción A: Mantener y subir local (por ejemplo el 82% de Miranda) */}
                                     <button 
                                         onClick={() => resolveConflict(true)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all space-y-1 group"
+                                        className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all space-y-1 group cursor-pointer active:scale-95 block"
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-sm text-blue-700">Usar progreso del dispositivo</span>
@@ -1295,7 +1336,7 @@
                                     {/* Opción B: Descargar de la nube */}
                                     <button 
                                         onClick={() => resolveConflict(false)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-300 hover:bg-slate-50 transition-all space-y-1"
+                                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-300 hover:bg-slate-50 transition-all space-y-1 cursor-pointer active:scale-95 block"
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-sm text-slate-700">Descargar de la Nube</span>
@@ -1311,7 +1352,7 @@
                         </div>
                     )}
 
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.6</p></footer>
+                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.7</p></footer>
                 </div>
             );
         };
