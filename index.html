@@ -49,7 +49,6 @@
             measurementId: "G-N2S2QD23T5"
         };
 
-        // Lista oficial con emojis de bandera blindados en Unicode hexadecimal de 2 letras
         const SECTION_LIST = [
             { code: "FWC", name: "FIFA World Cup", flag: "\uD83C\uDFC6", flagcdn: "fwc", count: 20 },
             { code: "MEX", name: "México", flag: "\uD83C\uDDF2\uD83C\uDDFD", flagcdn: "mx", count: 20 },
@@ -115,7 +114,7 @@
             return initial;
         };
 
-        // Convertir y normalizar listas antiguas al formato estándar
+        // Normalizar listas antiguas al formato estándar de 50 selecciones
         const normalizeStickers = (loadedList) => {
             const countMap = {};
             loadedList.forEach(s => {
@@ -134,12 +133,15 @@
         };
 
         const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
         const App = () => {
-            // Intentamos recuperar del almacenamiento local usando ambas claves posibles históricas
             const [stickers, setStickers] = useState(() => {
                 const saved1 = localStorage.getItem("miranda-sticker-tracker-2026");
                 const saved2 = localStorage.getItem("miranda-tracker-v10-prod");
@@ -177,8 +179,8 @@
 
             // Almacén de copias de seguridad encontradas
             const [allBackups, setAllBackups] = useState([]);
-            
-            // Estado para el resolutor de conflictos en tiempo real
+
+            // Estado para el resolutor de conflictos en tiempo real (Sincronización robusta)
             const [conflictState, setConflictState] = useState({
                 show: false,
                 localCount: 0,
@@ -200,7 +202,7 @@
             const unsubscribeFirestore = useRef(null);
             const activeAppId = useRef('miranda-tracker-app'); // Ruta activa identificada
             
-            // Ref para tener el estado actual de los stickers en callbacks de Firebase
+            // Ref para tener el estado actual de los stickers en callbacks asíncronos de Firebase
             const stickersRef = useRef(stickers);
             useEffect(() => {
                 stickersRef.current = stickers;
@@ -222,7 +224,7 @@
                 return "Coleccionista";
             }, [collectorName, syncCode]);
 
-            // Guardamos localmente en ambas claves posibles para evitar cualquier pérdida de memoria
+            // Guardamos localmente en ambas claves posibles para evitar pérdida de memoria
             useEffect(() => {
                 localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(stickers));
                 localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(stickers));
@@ -236,7 +238,6 @@
                 }
             }, [showSettings]);
 
-            // Sincronización de Firebase
             useEffect(() => {
                 const initFirebase = () => {
                     addLog("Conectando con base de datos...");
@@ -263,7 +264,7 @@
                 initFirebase();
             }, []);
 
-            // Escuchar cambios de Firestore en tiempo real (Lectura con Resolutor de Conflictos)
+            // Escuchar cambios de Firestore en tiempo real con Resolutor de Conflictos Inteligente
             const startRealTimeListener = (appId, cleanCode) => {
                 if (unsubscribeFirestore.current) unsubscribeFirestore.current();
                 
@@ -291,9 +292,9 @@
 
                             if (isFirstLoad) {
                                 isFirstLoad = false;
-                                // En el arranque, validamos si existe un conflicto de versiones
-                                if (localOwned > cloudOwned && cloudOwned > 0) {
-                                    // El dispositivo local tiene más progreso. Detenemos y preguntamos al usuario.
+                                // En el arranque, validamos si existe un conflicto real de versiones
+                                // Si el local tiene más que la nube, y no es que esté bugeado en 100% (992)
+                                if (localOwned > cloudOwned && cloudOwned > 0 && localOwned !== 992) {
                                     setConflictState({
                                         show: true,
                                         localCount: localOwned,
@@ -301,25 +302,22 @@
                                         cloudData: cloudStickers,
                                         localData: localStickers
                                     });
-                                    addLog(`¡Conflicto detectado al arrancar! Local: ${localOwned} un. vs Nube: ${cloudOwned} un.`);
+                                    addLog(`¡Conflicto detectado! Local: ${localOwned} un. vs Nube: ${cloudOwned} un.`);
                                 } else {
-                                    // No hay conflicto, o la nube es igual/mayor. Sincronizamos con confianza.
                                     setStickers(cloudStickers);
                                     addLog(`Sincronizado con la nube (${cloudOwned} estampas).`);
                                 }
                             } else {
-                                // Sincronización continua normal si la nube se actualiza mientras la app está abierta
                                 setStickers(cloudStickers);
                             }
                             setCloudStatus('syncing');
                         }
                     } else {
-                        // Si la nube está vacía pero el local tiene datos, la respaldamos de inmediato
                         const localStickers = stickersRef.current;
                         const localOwned = localStickers.filter(s => s.count > 0).length;
                         if (localOwned > 0) {
                             pushToCloud(localStickers);
-                            addLog("Nube vacía. Subiendo progreso actual de respaldo...");
+                            addLog("Nube vacía. Subiendo progreso de respaldo...");
                         }
                     }
                 }, (err) => {
@@ -329,26 +327,22 @@
                 });
             };
 
-            // RESOLUTOR MANUAL DE CONFLICTOS
+            // RESOLUTOR DE CONFLICTOS
             const resolveConflict = async (useLocal) => {
                 if (useLocal) {
-                    // Forzar el progreso local de Miranda hacia la Nube
                     await pushToCloud(conflictState.localData);
                     setStickers(conflictState.localData);
-                    addLog("Conflicto resuelto: Progreso de este dispositivo subido a la Nube.");
-                    setNotification("¡Nube actualizada con el progreso de este dispositivo!");
+                    addLog("Conflicto resuelto: Usado el progreso de este dispositivo.");
+                    setNotification("¡Nube actualizada!");
                 } else {
-                    // Descargar el progreso de la Nube al dispositivo
                     setStickers(conflictState.cloudData);
                     addLog("Conflicto resuelto: Descargado el progreso de la Nube.");
-                    setNotification("¡Dispositivo actualizado con los datos de la Nube!");
+                    setNotification("¡Dispositivo actualizado!");
                 }
-                // Limpiar estado de conflicto
                 setConflictState({ show: false, localCount: 0, cloudCount: 0, cloudData: null, localData: null });
                 setTimeout(() => setNotification(null), 3000);
             };
 
-            // Escaneo Profundo de LocalStorage para buscar claves legacy
             const scanAllLocalStorage = () => {
                 const backups = [];
                 for (let i = 0; i < localStorage.length; i++) {
@@ -379,7 +373,6 @@
                 return backups;
             };
 
-            // Escaneo Profundo de Firestore buscando en todas las cajitas y códigos posibles (Agresivo)
             const scanFirestoreBackups = async (codes) => {
                 const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
                 const foundBackups = [];
@@ -404,7 +397,7 @@
                                     if (ownedCount > 0) {
                                         foundBackups.push({
                                             type: 'cloud',
-                                            source: `Nube (Canal ${code} en [${path}])`,
+                                            source: `Nube (${code} en [${path}])`,
                                             appId: path,
                                             docId: code,
                                             stickers: data.stickers,
@@ -416,39 +409,27 @@
                                     }
                                 }
                             }
-                        } catch (e) {
-                            console.error(`Error escaneando ${path} -> ${code}:`, e);
-                        }
+                        } catch (e) {}
                     }
                 }
                 return foundBackups;
             };
 
-            // Ejecutar el Escáner de Recuperación Familiar al Inicio o cambio de código
             const runFullRecoveryScan = async () => {
                 addLog("Iniciando escáner de recuperación...");
                 const localBackups = scanAllLocalStorage();
-                
-                // Generar lista de códigos potenciales a buscar
                 const codesToScan = [
                     syncCode,
                     inputSyncCode,
                     'MIRANDA26',
                     'MIARNDA26',
                     'MIRANDA2026',
-                    'MIRA26',
-                    'MATEO26',
-                    'SOBRINO26',
-                    'SANTI26',
-                    'SANTIAGO26',
                     ...syncHistory
                 ].filter(Boolean);
 
                 try {
                     const cloudBackups = await scanFirestoreBackups(codesToScan);
                     const combined = [...localBackups, ...cloudBackups];
-                    
-                    // Remover duplicados por conteo idéntico
                     const seen = new Set();
                     const unique = combined.filter(b => {
                         const key = `${b.type}-${b.ownedCount}-${b.repeatedCount}`;
@@ -456,11 +437,9 @@
                         seen.add(key);
                         return true;
                     });
-                    
                     setAllBackups(unique);
                     addLog(`Búsqueda completa: ¡Halladas ${unique.length} copias con datos!`);
                     
-                    // Si encontramos una versión en la nube con datos que sea la mejor, proponerla
                     const cloudBest = unique.find(b => b.type === 'cloud' && b.ownedCount > 0);
                     if (cloudBest && stickers.filter(s => s.count > 0).length === 0) {
                         addLog(`Autocargando mejor copia de seguridad desde: ${cloudBest.source}`);
@@ -474,7 +453,6 @@
                 }
             };
 
-            // DESCARGA MANUAL DE EMERGENCIA (Ignora el escudo de seguridad)
             const forceDownloadFromCloud = async () => {
                 const targetCode = syncCode || inputSyncCode || 'MIRANDA26';
                 const cleanCode = targetCode.trim().toUpperCase();
@@ -482,13 +460,7 @@
                 setCloudStatus('syncing');
                 try {
                     const docRef = dbInstance.current
-                        .collection('artifacts')
-                        .doc(activeAppId.current)
-                        .collection('public')
-                        .doc('data')
-                        .collection('user_stickers')
-                        .doc(cleanCode);
-                    
+                        .collection('artifacts').doc(activeAppId.current).collection('public').doc('data').collection('user_stickers').doc(cleanCode);
                     const snap = await docRef.get();
                     if (snap.exists) {
                         const data = snap.data();
@@ -497,230 +469,13 @@
                             setStickers(normalized);
                             localStorage.setItem("miranda-tracker-v10-prod", JSON.stringify(normalized));
                             localStorage.setItem("miranda-sticker-tracker-2026", JSON.stringify(normalized));
-                            const owned = normalized.filter(s => s.count > 0).length;
-                            addLog(`¡Descarga forzada exitosa! Cargadas ${owned} láminas.`);
+                            addLog(`¡Descarga forzada exitosa! Cargadas ${normalized.filter(s => s.count > 0).length} láminas.`);
                             setNotification("¡Sincronizado con éxito desde la Nube!");
-                        } else {
-                            addLog("El canal en la nube no contiene estampas.");
-                            setNotification("Canal vacío en la nube.");
                         }
-                    } else {
-                        addLog("No se encontró el documento en la nube.");
-                        setNotification("No hay datos en este canal de la nube.");
                     }
                 } catch (e) {
-                    console.error(e);
-                    addLog(`Error en descarga forzada: ${e.message}`);
-                    setNotification("Error al descargar de la nube.");
+                    addLog(`Error: ${e.message}`);
                 }
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad completa)
-            const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
-                const section = SECTION_LIST.find(s => s.code === sectionCode);
-                if (!section) return emojiFallback;
-                
-                // Elementos especiales que no son países en FlagCDN
-                if (sectionCode === 'FWC' || sectionCode === 'CC') {
-                    return <span className="inline-block mr-2 text-sm leading-none">{section.flag}</span>;
-                }
-                
-                // Mostrar hermosa bandera SVG de FlagCDN con fallback
-                return (
-                    <img 
-                        src={`https://flagcdn.com/w40/${section.flagcdn}.png`} 
-                        alt={section.name} 
-                        className={className}
-                        onError={(e) => {
-                            e.target.style.display = 'none'; // Fallback silencioso si hay algún error
-                        }}
-                    />
-                );
-            };
-
-            // Inicializar escáner cuando Firebase esté listo
-            useEffect(() => {
-                if (dbInstance.current) {
-                    runFullRecoveryScan();
-                    if (syncCode) {
-                        startRealTimeListener(activeAppId.current, syncCode.trim().toUpperCase());
-                    }
-                }
-            }, [dbInstance.current, syncCode]);
-
-            // Subir datos actualizados a la nube (Escritura)
-            const pushToCloud = async (newStickers, newName = collectorName) => {
-                if (!syncCode || !dbInstance.current) return;
-                
-                const docRef = dbInstance.current
-                    .collection('artifacts')
-                    .doc(activeAppId.current)
-                    .collection('public')
-                    .doc('data')
-                    .collection('user_stickers')
-                    .doc(syncCode.trim().toUpperCase());
-                
-                try {
-                    await docRef.set({ 
-                        stickers: newStickers, 
-                        collectorName: newName,
-                        lastUpdated: new Date() 
-                    }, { merge: true });
-                    addLog("Cambio guardado en la nube.");
-                } catch (e) {
-                    console.error("Fallo al escribir en la nube:", e);
-                    addLog(`Error de guardado: ${e.message}`);
-                }
-            };
-
-            const stats = useMemo(() => {
-                const total = stickers.length;
-                const ownedCount = stickers.filter(s => s.count > 0).length;
-                const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                const progress = (ownedCount / total) * 100;
-                
-                const sectionsData = SECTION_LIST.map(section => {
-                    const group = stickers.filter(s => s.code === section.code);
-                    const obtained = group.filter(s => s.count > 0).length;
-                    const missing = section.count - obtained;
-                    const percent = (obtained / section.count) * 100;
-                    const repeated = group.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
-                    return { 
-                        ...section, 
-                        obtained, 
-                        missing,
-                        percent,
-                        repeated,
-                        isDone: obtained === section.count 
-                    };
-                });
-
-                const completedCount = sectionsData.filter(s => s.isDone).length;
-
-                // Cálculo de Estrategia de Compra
-                const ratioOwned = ownedCount / total;
-                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100;
-
-                return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
-            }, [stickers]);
-
-            // Deducir si existe una copia de seguridad con más estampas que la actual (Ignorar si el local es 100% erróneo)
-            const betterBackups = useMemo(() => {
-                const currentOwned = stickers.filter(s => s.count > 0).length;
-                if (currentOwned === 992) {
-                    // Si el iPad marca 100% erróneo, mostramos cualquier copia que tenga progreso real menor a 992 pero mayor a 0
-                    return allBackups.filter(b => b.ownedCount < 992 && b.ownedCount > 0);
-                }
-                return allBackups.filter(b => b.ownedCount > currentOwned);
-            }, [allBackups, stickers]);
-
-            const updateCount = (id, delta) => {
-                const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
-                setStickers(next);
-                if (syncCode) pushToCloud(next);
-            };
-
-            // Guarda los ajustes del Modal de forma manual
-            const handleSaveConfig = () => {
-                const cleanCode = inputSyncCode.trim().toUpperCase();
-                setSyncCode(cleanCode);
-                setCollectorName(inputCollectorName);
-                
-                localStorage.setItem('panini_sync_code', cleanCode);
-                localStorage.setItem('panini_collector_name', inputCollectorName);
-                
-                // Actualizar historial local de códigos
-                setSyncHistory(prev => {
-                    const next = [cleanCode, ...prev.filter(x => x !== cleanCode)].slice(0, 5);
-                    localStorage.setItem('panini_sync_history', JSON.stringify(next));
-                    return next;
-                });
-                
-                setShowSettings(false);
-                setNotification("Ajustes guardados");
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // Buscar datos de un amigo para comparar (Matchmaker de intercambios)
-            const checkFriendSync = async () => {
-                if (!dbInstance.current || !friendCode) return;
-                const cleanFriendCode = friendCode.trim().toUpperCase();
-                addLog(`Buscando datos de amigo: ${cleanFriendCode}...`);
-                
-                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
-                let friendFound = null;
-
-                for (const path of pathsToTry) {
-                    try {
-                        const docRef = dbInstance.current
-                            .collection('artifacts')
-                            .doc(path)
-                            .collection('public')
-                            .doc('data')
-                            .collection('user_stickers')
-                            .doc(cleanFriendCode);
-                            
-                        const snap = await docRef.get();
-                        if (snap.exists) {
-                            const data = snap.data();
-                            if (data && data.stickers) {
-                                friendFound = data;
-                                addLog(`¡Amigo encontrado en ruta [${path}]!`);
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        console.error(e);
-                    }
-                }
-
-                if (friendFound) {
-                    setFriendStickers(friendFound.stickers);
-                    setFriendName(friendFound.collectorName || cleanFriendCode);
-                    setNotification(`¡Comparando con ${friendFound.collectorName || cleanFriendCode}!`);
-                } else {
-                    setNotification("Código de amigo no encontrado.");
-                    setFriendStickers(null);
-                }
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            const exchangeAnalysis = useMemo(() => {
-                if (!friendStickers) return null;
-
-                const iCanGive = stickers.filter(mySticker => {
-                    const friendSticker = friendStickers.find(fs => fs.id === mySticker.id);
-                    return mySticker.count > 1 && friendSticker && friendSticker.count === 0;
-                }).map(s => s.id);
-
-                const friendCanGive = friendStickers.filter(friendSticker => {
-                    const mySticker = stickers.find(ms => ms.id === friendSticker.id);
-                    return friendSticker.count > 1 && mySticker && mySticker.count === 0;
-                }).map(s => s.id);
-
-                return { iCanGive, friendCanGive };
-            }, [stickers, friendStickers]);
-
-            const generateShareText = () => {
-                const missingStickers = stickers.filter(s => s.count === 0);
-                const repeatsStickers = stickers.filter(s => s.count > 1);
-
-                const missingText = formatStickersGrouped(missingStickers);
-                const repeatsText = formatStickersGrouped(repeatsStickers);
-
-                let t = `⚽ *ÁLBUM DE ${displayName.toUpperCase()} 2026* ⚽\n`;
-                if (shareMode === 'both' || shareMode === 'repeats') t += `\n✅ *REPETIDAS PARA CAMBIAR:* \n${repeatsText || 'Ninguna'}\n`;
-                if (shareMode === 'both' || shareMode === 'missing') t += `\n❌ *ME FALTAN:* \n${missingText || 'Ninguna'}\n`;
-                return t + "\n_¡Intercambiemos!_";
-            };
-
-            const copyToClipboard = () => {
-                const el = document.createElement('textarea');
-                el.value = generateShareText(); document.body.appendChild(el);
-                el.select(); document.execCommand('copy');
-                document.body.removeChild(el);
-                setNotification("¡Lista copiada!");
                 setTimeout(() => setNotification(null), 3000);
             };
 
@@ -728,7 +483,7 @@
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(JSON.stringify(stickers));
                 const link = document.createElement('a');
                 link.setAttribute('href', dataUri);
-                link.setAttribute('download', `${syncCode || 'resguardo'}_panini_backup.json`);
+                link.setAttribute('download', `${syncCode || 'miranda'}_panini_backup.json`);
                 link.click();
                 setNotification("¡Copia de seguridad guardada!");
                 setTimeout(() => setNotification(null), 3000);
@@ -752,16 +507,125 @@
                 reader.readAsText(file);
             };
 
-            // Filtrado de las selecciones en el Dashboard
-            const filteredDashboardSections = useMemo(() => {
-                return stats.sectionsData.filter(s => {
-                    if (dashboardFilter === 'pending') return !s.isDone;
-                    if (dashboardFilter === 'done') return s.isDone;
-                    return true;
-                });
-            }, [stats.sectionsData, dashboardFilter]);
+            useEffect(() => {
+                if (dbInstance.current) {
+                    runFullRecoveryScan();
+                    if (syncCode) {
+                        startRealTimeListener(activeAppId.current, syncCode.trim().toUpperCase());
+                    }
+                }
+            }, [dbInstance.current, syncCode]);
 
-            // Filtrado de estampas en el Álbum con subfiltros inteligentes
+            const stats = useMemo(() => {
+                const total = stickers.length;
+                const ownedCount = stickers.filter(s => s.count > 0).length;
+                const repeatedCount = stickers.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+                const progress = (ownedCount / total) * 100;
+                
+                const sectionsData = SECTION_LIST.map(section => {
+                    const group = stickers.filter(s => s.code === section.code);
+                    const obtained = group.filter(s => s.count > 0).length;
+                    const missing = section.count - obtained;
+                    const percent = (obtained / section.count) * 100;
+                    const repeated = group.reduce((acc, s) => acc + (s.count > 1 ? s.count - 1 : 0), 0);
+                    return { ...section, obtained, missing, percent, repeated, isDone: obtained === section.count };
+                });
+
+                const completedCount = sectionsData.filter(s => s.isDone).length;
+                const ratioOwned = ownedCount / total;
+                const probNew = (1 - Math.pow(ratioOwned, 5)) * 100;
+
+                return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
+            }, [stickers]);
+
+            const betterBackups = useMemo(() => {
+                const currentOwned = stickers.filter(s => s.count > 0).length;
+                if (currentOwned === 992) {
+                    return allBackups.filter(b => b.ownedCount < 992 && b.ownedCount > 0);
+                }
+                return allBackups.filter(b => b.ownedCount > currentOwned);
+            }, [allBackups, stickers]);
+
+            const updateCount = (id, delta) => {
+                const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
+                setStickers(next);
+                if (syncCode) pushToCloud(next);
+            };
+
+            const handleSaveConfig = () => {
+                const cleanCode = inputSyncCode.trim().toUpperCase();
+                setSyncCode(cleanCode);
+                setCollectorName(inputCollectorName);
+                localStorage.setItem('panini_sync_code', cleanCode);
+                localStorage.setItem('panini_collector_name', inputCollectorName);
+                
+                setSyncHistory(prev => {
+                    const next = [cleanCode, ...prev.filter(x => x !== cleanCode)].slice(0, 5);
+                    localStorage.setItem('panini_sync_history', JSON.stringify(next));
+                    return next;
+                });
+                
+                setShowSettings(false);
+                setNotification("Ajustes guardados");
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            const checkFriendSync = async () => {
+                if (!dbInstance.current || !friendCode) return;
+                const cleanFriendCode = friendCode.trim().toUpperCase();
+                addLog(`Buscando amigo: ${cleanFriendCode}...`);
+                const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
+                let friendFound = null;
+
+                for (const path of pathsToTry) {
+                    try {
+                        const docRef = dbInstance.current.collection('artifacts').doc(path).collection('public').doc('data').collection('user_stickers').doc(cleanFriendCode);
+                        const snap = await docRef.get();
+                        if (snap.exists) {
+                            const data = snap.data();
+                            if (data && data.stickers) {
+                                friendFound = data;
+                                break;
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                if (friendFound) {
+                    setFriendStickers(friendFound.stickers);
+                    setFriendName(friendFound.collectorName || cleanFriendCode);
+                    setNotification(`¡Comparando con ${friendFound.collectorName || cleanFriendCode}!`);
+                } else {
+                    setNotification("Código de amigo no encontrado.");
+                    setFriendStickers(null);
+                }
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            const exchangeAnalysis = useMemo(() => {
+                if (!friendStickers) return null;
+                const iCanGive = stickers.filter(ms => {
+                    const fs = friendStickers.find(f => f.id === ms.id);
+                    return ms.count > 1 && fs && fs.count === 0;
+                }).map(s => s.id);
+
+                const friendCanGive = friendStickers.filter(fs => {
+                    const ms = stickers.find(m => m.id === fs.id);
+                    return fs.count > 1 && ms && ms.count === 0;
+                }).map(s => s.id);
+
+                return { iCanGive, friendCanGive };
+            }, [stickers, friendStickers]);
+
+            const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
+                const section = SECTION_LIST.find(s => s.code === sectionCode);
+                if (!section) return emojiFallback;
+                if (sectionCode === 'FWC' || sectionCode === 'CC') {
+                    return <span className="inline-block mr-2 text-sm leading-none">{section.flag}</span>;
+                }
+                return <img src={`https://flagcdn.com/w40/${section.flagcdn}.png`} alt={section.name} className={className} onError={(e) => { e.target.style.display = 'none'; }} />;
+            };
+
             const displayedStickers = useMemo(() => {
                 let list = stickers;
                 if (!filter) {
@@ -770,8 +634,6 @@
                     const search = filter.toUpperCase();
                     list = stickers.filter(s => s.id.includes(search));
                 }
-
-                // Aplicar filtros adicionales de álbum
                 if (albumSubFilter === 'missing') return list.filter(s => s.count === 0);
                 if (albumSubFilter === 'repeated') return list.filter(s => s.count > 1);
                 return list;
@@ -779,9 +641,16 @@
 
             const currentSectionInfo = SECTION_LIST.find(s => s.code === selectedSection) || SECTION_LIST[0];
 
+            const filteredDashboardSections = useMemo(() => {
+                return stats.sectionsData.filter(s => {
+                    if (dashboardFilter === 'pending') return !s.isDone;
+                    if (dashboardFilter === 'done') return s.isDone;
+                    return true;
+                });
+            }, [stats.sectionsData, dashboardFilter]);
+
             return (
                 <div className="min-h-screen pb-24">
-                    {/* Header */}
                     <header className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white p-6 shadow-xl sticky top-0 z-50">
                         <div className="max-w-4xl mx-auto flex justify-between items-center text-center sm:text-left">
                             <div className="flex items-center gap-3">
@@ -809,25 +678,16 @@
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
-                        
-                        {/* BANNER INTERACTIVO DE AUTORECUPERACIÓN */}
                         {betterBackups.length > 0 && (
                             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 text-white p-5 rounded-[2rem] shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 animate-in slide-in-from-top duration-500">
                                 <div className="flex items-center gap-4 text-center md:text-left">
-                                    <div className="bg-white/20 p-3 rounded-2xl animate-pulse">
-                                        <Icon name="search" size={28} className="text-yellow-200" />
-                                    </div>
+                                    <div className="bg-white/20 p-3 rounded-2xl animate-pulse"><Icon name="search" size={28} className="text-yellow-200" /></div>
                                     <div>
                                         <h4 className="font-black text-sm uppercase tracking-wider">¡Detectamos copias con tu progreso!</h4>
                                         <p className="text-[11px] text-orange-100 font-semibold mt-0.5">Encontramos copias de seguridad de Miranda/Mateo con progreso real para tu iPad.</p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setShowRecoveryModal(true)} 
-                                    className="bg-white text-orange-700 px-6 py-3 rounded-2xl text-[11px] font-black uppercase shadow-lg hover:bg-slate-50 transition-all w-full md:w-auto"
-                                >
-                                    Ver y Restaurar
-                                </button>
+                                <button onClick={() => setShowRecoveryModal(true)} className="bg-white text-orange-700 px-6 py-3 rounded-2xl text-[11px] font-black uppercase shadow-lg hover:bg-slate-50 transition-all w-full md:w-auto">Ver y Restaurar</button>
                             </div>
                         )}
 
@@ -844,7 +704,8 @@
                             ))}
                         </nav>
 
-                        {/* DASHBOARD */}
+                        {/* TAB RESUMEN */}
+                        {}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6 animate-in fade-in zoom-in-95">
                                 <div className="bg-white p-8 rounded-[3rem] border shadow-sm flex flex-col md:flex-row items-center gap-10">
@@ -858,163 +719,63 @@
                                     <div className="flex-1 space-y-4 text-center md:text-left">
                                         <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">¡Vamos {displayName}!</h2>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-blue-50 rounded-3xl border border-blue-100 flex flex-col items-center md:items-start">
-                                                <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Stickers</p>
-                                                <p className="text-3xl font-black text-blue-700">{stats.ownedCount}</p>
-                                            </div>
-                                            <div className="p-4 bg-green-50 rounded-3xl border border-green-100 flex flex-col items-center md:items-start">
-                                                <p className="text-[10px] font-black text-green-400 uppercase mb-1">Países OK</p>
-                                                <p className="text-3xl font-black text-green-700">{stats.completedCount}</p>
-                                            </div>
+                                            <div className="p-4 bg-blue-50 rounded-3xl border border-blue-100 flex flex-col items-center md:items-start"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Stickers</p><p className="text-3xl font-black text-blue-700">{stats.ownedCount}</p></div>
+                                            <div className="p-4 bg-green-50 rounded-3xl border border-green-100 flex flex-col items-center md:items-start"><p className="text-[10px] font-black text-green-400 uppercase mb-1">Países OK</p><p className="text-3xl font-black text-green-700">{stats.completedCount}</p></div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-3xl border shadow-sm text-center flex flex-col justify-center">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-slate-500">Repetidas totales</h4>
-                                        <p className="text-3xl font-black text-orange-600">{stats.repeatedCount}</p>
-                                        <p className="text-[9px] text-slate-400 uppercase font-bold mt-1 tracking-widest italic">Para cambiar con amigos</p>
-                                    </div>
-
-                                    {/* SECCIÓN ANALÍTICA: PROBABILIDAD DE SOBRES */}
-                                    <div className={`p-6 rounded-3xl border-2 flex flex-col justify-center text-center sm:text-left ${
-                                        stats.probNew > 40 ? 'bg-green-50/50 border-green-100 text-green-900' : 'bg-orange-50/50 border-orange-100 text-orange-900'
-                                    }`}>
-                                        <h4 className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1.5">
-                                            <Icon name="info" size={16} /> Probabilidad de Sobre Nuevo
-                                        </h4>
-                                        <p className="text-3xl font-black">{Math.round(stats.probNew)}%</p>
-                                        <p className="text-[10px] font-bold mt-1.5 leading-relaxed uppercase tracking-wide">
-                                            {stats.probNew > 40 
-                                                ? "¡Sigue abriendo sobres! La probabilidad de encontrar láminas nuevas aún es muy alta." 
-                                                : "¡Peligro de repetidas! Conviene frenar la compra y enfocarse en intercambios."
-                                            }
-                                        </p>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-6 rounded-3xl border shadow-sm text-center flex flex-col justify-center"><h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-slate-500">Repetidas totales</h4><p className="text-3xl font-black text-orange-600">{stats.repeatedCount}</p></div>
+                                    <div className={`p-6 rounded-3xl border-2 flex flex-col justify-center text-center sm:text-left ${stats.probNew > 40 ? 'bg-green-50/50 border-green-100 text-green-900' : 'bg-orange-50/50 border-orange-100 text-orange-900'}`}><h4 className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1.5"><Icon name="info" size={16} /> Probabilidad de Sobre Nuevo</h4><p className="text-3xl font-black">{Math.round(stats.probNew)}%</p><p className="text-[10px] font-bold mt-1.5 uppercase">{stats.probNew > 40 ? "¡Sigue abriendo sobres! Alto rendimiento." : "¡Alerta de repetidas! Conviene cambiar."}</p></div>
                                 </div>
 
-                                {/* SECCIÓN: PROGRESO POR SELECCIONES */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4">
-                                        <div>
-                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                                                <Icon name="award" className="text-yellow-500" /> Progreso por Selecciones
-                                            </h4>
-                                            <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Avance individual, faltantes y repetidas</p>
-                                        </div>
+                                        <div><h4 className="text-xs font-black uppercase text-slate-800 flex items-center gap-1.5"><Icon name="award" className="text-yellow-500" /> Progreso por Selecciones</h4></div>
                                         <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-                                            {[
-                                                { id: 'pending', label: 'Incompletas' },
-                                                { id: 'done', label: 'Listas' },
-                                                { id: 'all', label: 'Todas' }
-                                            ].map(btn => (
+                                            {['pending', 'done', 'all'].map(btn => (
                                                 <button
-                                                    key={btn.id}
-                                                    onClick={() => setDashboardFilter(btn.id)}
+                                                    key={btn}
+                                                    onClick={() => setDashboardFilter(btn)}
                                                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
-                                                        dashboardFilter === btn.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'
+                                                        dashboardFilter === btn ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-slate-500'
                                                     }`}
                                                 >
-                                                    {btn.label}
+                                                    {btn === 'pending' ? 'Incompletas' : btn === 'done' ? 'Listas' : 'Todas'}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* Grid de Avance por País */}
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[360px] overflow-y-auto pr-1 border rounded-2xl p-2 bg-slate-50/50 scrollbar-hide">
                                         {filteredDashboardSections.map(s => (
                                             <div key={s.code} className="bg-white p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between">
-                                                <div className="flex justify-between items-start gap-1">
-                                                    <span className="font-extrabold text-[12px] truncate flex items-center">
-                                                        {renderFlagImg(s.code, s.flag)}
-                                                        <span className="ml-1">{s.name}</span>
-                                                    </span>
-                                                    <span className="text-[9px] font-black text-slate-400 px-1 bg-slate-100 rounded">{s.code}</span>
-                                                </div>
+                                                <div className="flex justify-between items-start gap-1"><span className="font-extrabold text-[12px] truncate flex items-center">{renderFlagImg(s.code, s.flag)}<span className="ml-1">{s.name}</span></span><span className="text-[9px] font-black text-slate-400 px-1 bg-slate-100 rounded">{s.code}</span></div>
                                                 <div className="flex justify-between items-end mt-3">
                                                     <div>
-                                                        <div className="flex flex-wrap items-center gap-1">
-                                                            <p className="text-[10px] text-slate-500 font-bold leading-none">{s.obtained}/{s.count} un.</p>
-                                                            {s.repeated > 0 && (
-                                                                <span className="text-[8px] font-black text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-200 leading-none">
-                                                                    {s.repeated} rep
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {s.isDone ? (
-                                                            <p className="text-[9px] text-green-600 font-extrabold mt-1 uppercase tracking-tight">País Completo</p>
-                                                        ) : (
-                                                            <p className="text-[9px] text-red-500 font-extrabold mt-1 uppercase tracking-tight">Faltan: {s.missing}</p>
-                                                        )}
+                                                        <div className="flex items-center gap-1"><p className="text-[10px] text-slate-500 font-bold leading-none">{s.obtained}/{s.count}</p>{s.repeated > 0 && <span className="text-[8px] font-black text-orange-600 bg-orange-50 px-1 py-0.5 rounded leading-none">{s.repeated} rep</span>}</div>
+                                                        <p className={`text-[9px] font-extrabold mt-1 uppercase ${s.isDone ? 'text-green-600' : 'text-red-500'}`}>{s.isDone ? 'Completo' : `Faltan: ${s.missing}`}</p>
                                                     </div>
-                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
-                                                        s.isDone ? 'text-green-700 bg-green-50 border border-green-200' : 'text-blue-700 bg-blue-50'
-                                                    }`}>
-                                                        {Math.round(s.percent)}%
-                                                    </span>
+                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${s.isDone ? 'text-green-700 bg-green-50' : 'text-blue-700 bg-blue-50'}`}>{Math.round(s.percent)}%</span>
                                                 </div>
-                                                {/* Mini Barra de Progreso */}
-                                                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full transition-all duration-700 ${s.isDone ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                                        style={{ width: `${s.percent}%` }}
-                                                    ></div>
-                                                </div>
+                                                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden"><div className={`h-full rounded-full ${s.isDone ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${s.percent}%` }}></div></div>
                                             </div>
                                         ))}
-                                        {filteredDashboardSections.length === 0 && (
-                                            <div className="col-span-full py-12 text-center text-slate-400 italic text-xs">
-                                                No hay selecciones en esta categoría actualmente.
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* RESPALDO MANUAL */}
                                 <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
-                                    <div className="text-center md:text-left">
-                                        <h3 className="font-black text-lg">Copia de Seguridad de Emergencia</h3>
-                                        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">Guarda un archivo de respaldo en tu iPad por seguridad</p>
-                                    </div>
+                                    <div className="text-center md:text-left"><h3 className="font-black text-lg">Copia de Seguridad JSON</h3><p className="text-xs text-slate-400 uppercase font-bold text-slate-400">Guarda un archivo de respaldo seguro</p></div>
                                     <div className="flex gap-2 w-full md:w-auto">
-                                        <button onClick={exportData} className="flex-1 md:flex-none bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase active:scale-95 transition-all">Exportar .json</button>
-                                        <label className="flex-1 md:flex-none bg-slate-700 px-6 py-3 rounded-xl text-[10px] font-black uppercase text-center cursor-pointer active:scale-95 transition-all">
-                                            Importar .json <input type="file" className="hidden" accept=".json" onChange={importData} /></label>
-                                    </div>
-                                </div>
-
-                                {/* PANEL DE DIAGNÓSTICO INTEGRADO */}
-                                <div className="bg-slate-900 text-slate-300 p-5 rounded-[2rem] border-4 border-slate-800 font-mono text-xs space-y-3 shadow-2xl">
-                                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                                        <span className="font-bold text-blue-400 flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                                            DIAGNÓSTICO EN TIEMPO REAL
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                                        <div><b>Base de Datos:</b> pani-i2026</div>
-                                        <div><b>Sincronización:</b> 
-                                            <span className={`ml-1 font-bold ${cloudStatus === 'syncing' ? 'text-green-400' : 'text-red-400'}`}>
-                                                {cloudStatus === 'syncing' ? '🟢 CONECTADO' : '🔴 LOCAL'}
-                                            </span>
-                                        </div>
-                                        <div><b>ID del Canal:</b> {syncCode || "SIN CLAVE"}</div>
-                                    </div>
-                                    <div className="border-t border-slate-800 pt-2 space-y-1">
-                                        <p className="text-[10px] text-slate-500 uppercase font-black">Historial:</p>
-                                        <div className="max-h-24 overflow-y-auto space-y-1 scrollbar-hide text-[10px] text-slate-400">
-                                            {logs.map((log, idx) => (
-                                                <p key={idx} className="leading-tight">{log}</p>
-                                            ))}
-                                        </div>
+                                        <button onClick={exportData} className="flex-1 md:flex-none bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase">Exportar</button>
+                                        <label className="flex-1 md:flex-none bg-slate-700 px-6 py-3 rounded-xl text-[10px] font-black uppercase text-center cursor-pointer">Importar <input type="file" className="hidden" accept=".json" onChange={importData} /></label>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* ÁLBUM */}
+                        {/* TAB ALBUM */}
+                        {}
                         {activeTab === 'album' && (
                             <div className="space-y-4 animate-in fade-in">
                                 <div className="bg-white p-5 rounded-3xl border shadow-sm flex flex-col md:flex-row gap-3 items-end">
@@ -1026,9 +787,7 @@
                                                 <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 outline-none focus:border-blue-500 transition-all text-sm appearance-none pr-10">
                                                     {SECTION_LIST.map(s => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                                                 </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                    <Icon name="chevron-down" size={20} />
-                                                </div>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" size={20} /></div>
                                             </div>
                                         </div>
                                     </div>
@@ -1040,25 +799,10 @@
 
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm min-h-[400px]">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4 px-2">
-                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic leading-none">
-                                            {renderFlagImg(selectedSection, currentSectionInfo.flag, "w-8 h-6 rounded shadow-sm")}
-                                            <span>{currentSectionInfo.name} ({currentSectionInfo.code})</span>
-                                        </h3>
+                                        <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 italic leading-none">{renderFlagImg(selectedSection, currentSectionInfo.flag, "w-8 h-6 rounded shadow-sm")}<span>{currentSectionInfo.name} ({currentSectionInfo.code})</span></h3>
                                         <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
-                                            {[
-                                                { id: 'all', label: 'Todas' },
-                                                { id: 'missing', label: 'Faltantes' },
-                                                { id: 'repeated', label: 'Repetidas' }
-                                            ].map(opt => (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setAlbumSubFilter(opt.id)}
-                                                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
-                                                        albumSubFilter === opt.id ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-slate-500'
-                                                    }`}
-                                                >
-                                                    {opt.label}
-                                                </button>
+                                            {['all', 'missing', 'repeated'].map(opt => (
+                                                <button key={opt} onClick={() => setAlbumSubFilter(opt)} className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${albumSubFilter === opt ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-slate-500'}`}>{opt === 'all' ? 'Todas' : opt === 'missing' ? 'Faltantes' : 'Repetidas'}</button>
                                             ))}
                                         </div>
                                     </div>
@@ -1075,301 +819,77 @@
                                             </div>
                                         ))}
                                     </div>
-                                    {displayedStickers.length === 0 && (
-                                        <div className="py-20 text-center text-slate-400 italic text-sm">
-                                            No hay láminas en esta sección con el filtro seleccionado.
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {/* COMPARTIR Y COMPARAR */}
+                        {/* COMPARTIR */}
+                        {}
                         {activeTab === 'exchange' && (
                             <div className="space-y-6 animate-in fade-in">
-                                {/* SECCIÓN: EL MATCHMAKER (COMPARTIR CON UN AMIGO) */}
                                 <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
                                     <div>
-                                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                                            <Icon name="git-compare" className="text-indigo-600" /> Comparar Intercambio con un Amigo
-                                        </h4>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5 tracking-wider">Cruza tus repetidas con lo que le falta a tu amigo automáticamente</p>
+                                        <h4 className="text-xs font-black uppercase text-slate-800 flex items-center gap-1.5"><Icon name="git-compare" className="text-indigo-600" /> Comparar Intercambio</h4>
                                     </div>
                                     <div className="flex gap-2 max-w-md">
-                                        <input 
-                                            type="text" 
-                                            placeholder="CÓDIGO DE TU AMIGO (Ej: MATEO26)" 
-                                            value={friendCode}
-                                            onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
-                                            className="flex-1 px-4 py-3 border-2 rounded-2xl font-black uppercase text-xs outline-none focus:border-blue-500"
-                                        />
-                                        <button 
-                                            onClick={checkFriendSync}
-                                            className="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
-                                        >
-                                            Comparar
-                                        </button>
+                                        <input type="text" placeholder="CÓDIGO DE TU AMIGO" value={friendCode} onChange={(e) => setFriendCode(e.target.value.toUpperCase())} className="flex-1 px-4 py-3 border-2 rounded-2xl font-black uppercase text-xs" />
+                                        <button onClick={checkFriendSync} className="bg-indigo-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase">Comparar</button>
                                     </div>
-
                                     {exchangeAnalysis && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 card-enter">
-                                            <div className="p-4 bg-green-50 border border-green-100 rounded-3xl space-y-2">
-                                                <h5 className="font-extrabold text-xs text-green-800 uppercase tracking-tight flex items-center gap-1">
-                                                    🎁 Le puedes dar a {friendName}:
-                                                </h5>
-                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-green-700 bg-white/50 p-2.5 rounded-xl border border-green-200">
-                                                    {exchangeAnalysis.iCanGive.length > 0 
-                                                        ? exchangeAnalysis.iCanGive.join(', ') 
-                                                        : "No tienes repetidas que le falten."
-                                                    }
-                                                </div>
-                                                <p className="text-[9px] text-green-600 font-bold uppercase">{exchangeAnalysis.iCanGive.length} láminas listas para regalarle.</p>
-                                            </div>
-
-                                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-3xl space-y-2">
-                                                <h5 className="font-extrabold text-xs text-blue-800 uppercase tracking-tight flex items-center gap-1">
-                                                    🎯 {friendName} te puede dar a ti:
-                                                </h5>
-                                                <div className="max-h-32 overflow-y-auto text-[10px] font-mono font-bold text-blue-700 bg-white/50 p-2.5 rounded-xl border border-blue-200">
-                                                    {exchangeAnalysis.friendCanGive.length > 0 
-                                                        ? exchangeAnalysis.friendCanGive.join(', ') 
-                                                        : "Tu amigo no tiene repetidas que te falten."
-                                                    }
-                                                </div>
-                                                <p className="text-[9px] text-blue-600 font-bold uppercase">{exchangeAnalysis.friendCanGive.length} láminas listas para recibir.</p>
-                                            </div>
+                                            <div className="p-4 bg-green-50 rounded-3xl"><h5 className="font-extrabold text-xs text-green-800">🎁 Le puedes dar a {friendName}:</h5><div className="max-h-32 overflow-y-auto text-[10px] font-mono mt-2">{exchangeAnalysis.iCanGive.join(', ') || 'Ninguna'}</div></div>
+                                            <div className="p-4 bg-blue-50 rounded-3xl"><h5 className="font-extrabold text-xs text-blue-800">🎯 {friendName} te puede dar:</h5><div className="max-h-32 overflow-y-auto text-[10px] font-mono mt-2">{exchangeAnalysis.friendCanGive.join(', ') || 'Ninguna'}</div></div>
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="bg-white p-8 rounded-[3rem] border shadow-sm text-center">
                                     <div className="flex justify-center gap-4 mb-8">
-                                        {[
-                                            {id: 'both', label: 'Todo', icon: 'list'},
-                                            {id: 'repeats', label: 'Repetidas', icon: 'refresh-ccw'},
-                                            {id: 'missing', label: 'Faltantes', icon: 'alert-circle'}
-                                        ].map(m => (
-                                            <button key={m.id} onClick={() => setShareMode(m.id)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter ${shareMode === m.id ? 'bg-blue-600 border-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}>
-                                                <Icon name={m.icon} />
-                                                {m.label}
-                                            </button>
+                                        {['both', 'repeats', 'missing'].map(m => (
+                                            <button key={m} onClick={() => setShareMode(m)} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-3xl border-2 transition-all font-black text-[10px] uppercase ${shareMode === m ? 'bg-blue-600 text-white shadow-xl' : 'text-slate-400 bg-slate-50'}`}><Icon name={m === 'both' ? 'list' : m === 'repeats' ? 'refresh-ccw' : 'alert-circle'} />{m === 'both' ? 'Todo' : m === 'repeats' ? 'Repetidas' : 'Faltantes'}</button>
                                         ))}
                                     </div>
-                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 border-slate-800 leading-relaxed scrollbar-hide select-all shadow-inner">
-                                        {generateShareText()}
-                                    </div>
-                                    <button onClick={copyToClipboard} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl active:scale-95 text-lg"
-                                    >
-                                        <Icon name="copy" size={28} /> COPIAR LISTA
-                                    </button>
+                                    <div className="bg-slate-900 text-green-400 p-8 rounded-[2rem] font-mono text-left text-[11px] mb-8 max-h-80 overflow-y-auto border-4 leading-relaxed select-all">{generateShareText()}</div>
+                                    <button onClick={copyToClipboard} className="w-full bg-green-600 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 text-lg"><Icon name="copy" size={28} /> COPIAR LISTA</button>
                                 </div>
                             </div>
                         )}
                     </main>
 
-                    {/* VENTANA DE AJUSTES SIMPLIFICADA */}
+                    {/* VENTANA DE AJUSTES */}
+                    {}
                     {showSettings && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[2.5rem] p-6 max-w-sm w-full shadow-2xl space-y-6 card-enter">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-2">
-                                        <Icon name="cloud-lightning" className="text-blue-600" />
-                                        <h3 className="text-lg font-black text-slate-800">Sincronización Familiar</h3>
-                                    </div>
-                                    <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600"><Icon name="x" /></button>
+                                    <div className="flex items-center gap-2"><Icon name="cloud-lightning" className="text-blue-600" /><h3 className="text-lg font-black">Sincronización</h3></div>
+                                    <button onClick={() => setShowSettings(false)}><Icon name="x" /></button>
                                 </div>
-
                                 <div className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Tu Código Personal</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="EJ: MIRANDA26" 
-                                            className="w-full px-4 py-3 border-2 rounded-2xl font-black uppercase text-sm outline-none focus:border-blue-500" 
-                                            value={inputSyncCode}
-                                            onChange={(e) => setInputSyncCode(e.target.value.toUpperCase())}
-                                        />
-                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Escribe tu código único (ej: MIRANDA26) para que todos los dispositivos carguen y guarden lo mismo.</p>
-                                        
-                                        {/* Historial de Códigos Rápidos */}
-                                        {syncHistory.length > 0 && (
-                                            <div className="mt-2.5">
-                                                <p className="text-[9px] font-black text-slate-400 uppercase leading-none mb-1.5">Códigos de este iPad:</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {syncHistory.map(histCode => (
-                                                        <button 
-                                                            key={histCode}
-                                                            type="button"
-                                                            onClick={() => setInputSyncCode(histCode)}
-                                                            className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 font-bold text-[10px] rounded-lg border border-slate-200 transition-colors"
-                                                        >
-                                                            {histCode}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider leading-none">Nombre del Coleccionista</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="EJ: Miranda o Mateo" 
-                                            className="w-full px-4 py-3 border-2 rounded-2xl font-black text-sm outline-none focus:border-blue-500" 
-                                            value={inputCollectorName}
-                                            onChange={(e) => setInputCollectorName(e.target.value)}
-                                        />
-                                        <p className="text-[9px] text-slate-400 mt-1 leading-normal">Personaliza el saludo y los títulos de la aplicación.</p>
-                                    </div>
-                                    
-                                    {/* BOTÓN DIRECTO DE DESCARGA FORZADA (Por si acaso un dispositivo se queda atorado) */}
-                                    <button 
-                                        type="button"
-                                        onClick={() => {
-                                            forceDownloadFromCloud();
-                                            setShowSettings(false);
-                                        }} 
-                                        className="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-2xl text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon name="cloud-download" size={12} /> Forzar Descarga desde la Nube
-                                    </button>
-
-                                    {/* Botón de Emergencia de Escaneo manual */}
-                                    <button 
-                                        type="button"
-                                        onClick={runFullRecoveryScan} 
-                                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-2.5 rounded-2xl text-[10px] uppercase border border-slate-200 transition-colors flex items-center justify-center gap-1.5"
-                                    >
-                                        <Icon name="search" size={12} /> Buscar respaldos perdidos en la nube
-                                    </button>
+                                    <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Código Personal</label><input type="text" className="w-full px-4 py-3 border-2 rounded-2xl font-black uppercase text-sm" value={inputSyncCode} onChange={(e) => setInputSyncCode(e.target.value.toUpperCase())} /></div>
+                                    <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Nombre Coleccionista</label><input type="text" className="w-full px-4 py-3 border-2 rounded-2xl font-black text-sm" value={inputCollectorName} onChange={(e) => setInputCollectorName(e.target.value)} /></div>
                                 </div>
-
-                                <button onClick={handleSaveConfig} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-xs uppercase shadow-lg shadow-blue-200">
-                                    Guardar Ajustes
-                                </button>
+                                <button onClick={handleSaveConfig} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl text-xs uppercase">Guardar</button>
                             </div>
                         </div>
                     )}
 
-                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS (Sólo para backups reales) */}
-                    {showRecoveryModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl space-y-6 card-enter">
-                                <div className="flex justify-between items-start border-b pb-4">
-                                    <div>
-                                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                            <Icon name="life-buoy" className="text-orange-600" />
-                                            Centro de Recuperación de Estampas
-                                        </h3>
-                                        <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">Selecciona la copia que deseas restaurar</p>
-                                    </div>
-                                    <button onClick={() => setShowRecoveryModal(false)} className="text-slate-400 hover:text-slate-600"><Icon name="x" /></button>
-                                </div>
-
-                                {/* LISTA DE COPIAS ENCONTRADAS POR ESCÁNER */}
-                                {allBackups.length > 0 ? (
-                                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase leading-none">Copias detectadas en tu base de datos:</p>
-                                        {allBackups.map((backup, idx) => (
-                                            <div key={idx} className="bg-slate-50 p-4 rounded-2xl border flex justify-between items-center hover:border-blue-300 transition-all shadow-sm">
-                                                <div className="space-y-1">
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                                        backup.type === 'local' ? 'bg-teal-100 text-teal-700' : 'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                        {backup.type === 'local' ? 'Dispositivo (iPad/Cel)' : 'Nube (Google)'}
-                                                    </span>
-                                                    <h4 className="font-extrabold text-sm text-slate-700 mt-1">{backup.source}</h4>
-                                                    <p className="text-[10px] text-slate-400 font-medium">
-                                                        {backup.type === 'cloud' && `Último cambio: ${backup.lastUpdated}`}
-                                                    </p>
-                                                    <div className="flex gap-3 text-[10px] font-bold text-slate-500 mt-1 uppercase">
-                                                        <span>✅ {backup.ownedCount} únicas</span>
-                                                        <span>🔸 {backup.repeatedCount} repetidas</span>
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={() => {
-                                                        setStickers(normalizeStickers(backup.stickers));
-                                                        if (backup.type === 'cloud') {
-                                                            setSyncCode(backup.docId);
-                                                            setCollectorName(backup.collectorName);
-                                                            localStorage.setItem('panini_sync_code', backup.docId);
-                                                            localStorage.setItem('panini_collector_name', backup.collectorName);
-                                                        } else {
-                                                            if (syncCode) pushToCloud(backup.stickers);
-                                                        }
-                                                        setShowRecoveryModal(false);
-                                                        setNotification("¡Progreso restaurado correctamente!");
-                                                        setTimeout(() => setNotification(null), 3000);
-                                                    }} 
-                                                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-100 transition-all"
-                                                >
-                                                    Cargar
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center text-slate-400 italic text-sm">
-                                        No se han detectado respaldos automáticos aún. Usa la Copia de Seguridad de abajo.
-                                    </div>
-                                )}
-                                
-                                <div className="p-4 bg-blue-50 rounded-2xl border text-xs text-blue-800 leading-relaxed font-semibold">
-                                    💡 <b>Consejo familiar:</b> Puedes cargar cualquiera de estas copias de seguridad de la lista. Al hacerlo, el progreso actual del dispositivo será reemplazado de inmediato por el de tu respaldo.
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* MODAL DE RESOLUCIÓN DE CONFLICTOS FAMILIAR */}
+                    {/* RESOLUTOR DE CONFLICTOS */}
                     {conflictState.show && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl space-y-6 card-enter">
                                 <div className="text-center space-y-2">
-                                    <div className="inline-block bg-amber-100 text-amber-600 p-4 rounded-full animate-bounce">
-                                        <Icon name="alert-triangle" size={32} />
-                                    </div>
-                                    <h3 className="text-xl font-black text-slate-800">¡Conflicto de Sincronización!</h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                                        El progreso en este dispositivo es diferente al guardado en la nube para el canal <b className="text-blue-600">MIRANDA26</b>. ¿Qué deseas hacer?
-                                    </p>
+                                    <div className="inline-block bg-amber-100 text-amber-600 p-4 rounded-full"><Icon name="alert-triangle" size={32} /></div>
+                                    <h3 className="text-xl font-black">¡Conflicto de Sincronización!</h3>
+                                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">El progreso en este dispositivo ({conflictState.localCount} un.) es diferente al de la nube ({conflictState.cloudCount} un.). ¿Cuál deseas conservar?</p>
                                 </div>
-
                                 <div className="space-y-4">
-                                    {/* Opción A: Mantener y subir local (por ejemplo el 82% de Miranda) */}
-                                    <button 
-                                        onClick={() => resolveConflict(true)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all space-y-1 group"
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-extrabold text-sm text-blue-700">Usar progreso del dispositivo</span>
-                                            <span className="bg-blue-100 text-blue-700 font-bold text-[10px] px-2.5 py-1 rounded-full group-hover:scale-105 transition-transform">Recomendado</span>
-                                        </div>
-                                        <p className="text-xs text-slate-500 font-medium">Llevar las <b className="text-slate-800">{conflictState.localCount} estampas</b> de este dispositivo a la nube para actualizar a todos los demás.</p>
-                                    </button>
-
-                                    {/* Opción B: Descargar de la nube (el 70.1% de Marco) */}
-                                    <button 
-                                        onClick={() => resolveConflict(false)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-300 hover:bg-slate-50 transition-all space-y-1"
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-extrabold text-sm text-slate-700">Descargar de la Nube</span>
-                                        </div>
-                                        <p className="text-xs text-slate-500 font-medium">Reemplazar los datos de este dispositivo con las <b className="text-slate-800">{conflictState.cloudCount} estampas</b> guardadas en internet.</p>
-                                    </button>
-                                </div>
-
-                                <div className="p-3 bg-slate-50 rounded-xl border text-[10px] text-slate-400 font-semibold leading-relaxed">
-                                    💡 <b>Nota familiar:</b> El celular de Miranda conserva sus datos locales de manera segura. Si deseas que los demás dispositivos (iPad, Celulares) se actualicen a su 82%, Miranda debe elegir la primera opción en su teléfono.
+                                    <button onClick={() => resolveConflict(true)} className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all flex justify-between items-center"><span className="font-extrabold text-sm text-blue-700">Usar progreso del dispositivo ({conflictState.localCount} un.)</span><span className="bg-blue-100 text-blue-700 text-[10px] px-2.5 py-1 rounded-full font-bold">Subir</span></button>
+                                    <button onClick={() => resolveConflict(false)} className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-300 transition-all"><span className="font-extrabold text-sm text-slate-700">Descargar de la Nube ({conflictState.cloudCount} un.)</span></button>
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 text-center z-50"><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Miranda Panini Tracker 2026 v10.6</p></footer>
                 </div>
             );
         };
