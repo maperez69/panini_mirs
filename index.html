@@ -50,65 +50,109 @@
         };
 
         const SECTION_LIST = [
-            { code: "FWC", name: "FIFA World Cup", flag: "🏆", count: 20 },
-            { code: "MEX", name: "México", flag: "🇲🇽", count: 20 },
-            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", count: 20 },
-            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", count: 20 },
-            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", count: 20 },
-            { code: "CAN", name: "Canadá", flag: "🇨🇦", count: 20 },
-            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", count: 20 },
-            { code: "QAT", name: "Qatar", flag: "🇶🇦", count: 20 },
-            { code: "SUI", name: "Suiza", flag: "🇨🇭", count: 20 },
-            { code: "BRA", name: "Brasil", flag: "🇧🇷", count: 20 },
-            { code: "MAR", name: "Marruecos", flag: "🇲🇦", count: 20 },
-            { code: "HAI", name: "Haití", flag: "🇭🇹", count: 20 },
-            { code: "SCO", name: "Escocia", flag: "🏴F", count: 20 },
-            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", count: 20 },
-            { code: "PAR", name: "Paraguay", flag: "🇵🇾", count: 20 },
-            { code: "AUS", name: "Australia", flag: "🇦🇺", count: 20 },
-            { code: "TUR", name: "Turquía", flag: "🇹🇷", count: 20 },
-            { code: "GER", name: "Alemania", flag: "🇩🇪", count: 20 },
-            { code: "CUW", name: "Curazao", flag: "🇨🇼", count: 20 },
-            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", count: 20 },
-            { code: "ECU", name: "Ecuador", flag: "🇪🇨", count: 20 },
-            { code: "NED", name: "Países Bajos", flag: "🇳🇱", count: 20 },
-            { code: "JPN", name: "Japón", flag: "🇯🇵", count: 20 },
-            { code: "SWE", name: "Suecia", flag: "🇸🇪", count: 20 },
-            { code: "TUN", name: "Túnez", flag: "🇹🇳", count: 20 },
-            { code: "BEL", name: "Bélgica", flag: "🇧🇪", count: 20 },
-            { code: "EGY", name: "Egipto", flag: "🇪🇬", count: 20 },
-            { code: "IRN", name: "Irán", flag: "🇮🇷", count: 20 },
-            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", count: 20 },
-            { code: "ESP", name: "España", flag: "🇪🇸", count: 20 },
-            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", count: 20 },
-            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", count: 20 },
-            { code: "URU", name: "Uruguay", flag: "🇺🇾", count: 20 },
-            { code: "FRA", name: "Francia", flag: "🇫🇷", count: 20 },
-            { code: "SEN", name: "Senegal", flag: "🇸🇳", count: 20 },
-            { code: "IRQ", name: "Irak", flag: "🇮🇶", count: 20 },
-            { code: "NOR", name: "Noruega", flag: "🇳🇴", count: 20 },
-            { code: "ARG", name: "Argentina", flag: "🇦🇷", count: 20 },
-            { code: "ALG", name: "Argelia", flag: "🇩🇿", count: 20 },
-            { code: "AUT", name: "Austria", flag: "🇦🇹", count: 20 },
-            { code: "JOR", name: "Jordania", flag: "🇯🇴", count: 20 },
-            { code: "POR", name: "Portugal", flag: "🇵🇹", count: 20 },
-            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", count: 20 },
-            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", count: 20 },
-            { code: "COL", name: "Colombia", flag: "🇨🇴", count: 20 },
-            { code: "ENG", name: "Inglaterra", flag: "🏴", count: 20 },
-            { code: "CRO", name: "Croacia", flag: "🇭🇷", count: 20 },
-            { code: "GHA", name: "Ghana", flag: "🇬🇭", count: 20 },
-            { code: "PAN", name: "Panamá", flag: "🇵🇦", count: 20 },
-            { code: "CC", name: "Coca-Cola", flag: "🥤", count: 12 }
+            { code: "FWC", name: "FIFA World Cup", flag: "🏆", flagcdn: "fwc", count: 20 },
+            { code: "MEX", name: "México", flag: "🇲🇽", flagcdn: "mx", count: 20 },
+            { code: "RSA", name: "Sudáfrica", flag: "🇿🇦", flagcdn: "za", count: 20 },
+            { code: "KOR", name: "Corea del Sur", flag: "🇰🇷", flagcdn: "kr", count: 20 },
+            { code: "CZE", name: "Rep. Checa", flag: "🇨🇿", flagcdn: "cz", count: 20 },
+            { code: "CAN", name: "Canadá", flag: "🇨🇦", flagcdn: "ca", count: 20 },
+            { code: "BIH", name: "Bosnia & Herz.", flag: "🇧🇦", flagcdn: "ba", count: 20 },
+            { code: "QAT", name: "Qatar", flag: "🇶🇦", flagcdn: "qa", count: 20 },
+            { code: "SUI", name: "Suiza", flag: "🇨🇭", flagcdn: "ch", count: 20 },
+            { code: "BRA", name: "Brasil", flag: "🇧🇷", flagcdn: "br", count: 20 },
+            { code: "MAR", name: "Marruecos", flag: "🇲🇦", flagcdn: "ma", count: 20 },
+            { code: "HAI", name: "Haití", flag: "🇭🇹", flagcdn: "ht", count: 20 },
+            { code: "SCO", name: "Escocia", flag: "🏴F", flagcdn: "gb-sct", count: 20 },
+            { code: "USA", name: "Estados Unidos", flag: "🇺🇸", flagcdn: "us", count: 20 },
+            { code: "PAR", name: "Paraguay", flag: "🇵🇾", flagcdn: "py", count: 20 },
+            { code: "AUS", name: "Australia", flag: "🇦🇺", flagcdn: "au", count: 20 },
+            { code: "TUR", name: "Turquía", flag: "🇹🇷", flagcdn: "tr", count: 20 },
+            { code: "GER", name: "Alemania", flag: "🇩🇪", flagcdn: "de", count: 20 },
+            { code: "CUW", name: "Curazao", flag: "🇨🇼", flagcdn: "cw", count: 20 },
+            { code: "CIV", name: "Costa de Marfil", flag: "🇨🇮", flagcdn: "ci", count: 20 },
+            { code: "ECU", name: "Ecuador", flag: "🇪🇨", flagcdn: "ec", count: 20 },
+            { code: "NED", name: "Países Bajos", flag: "🇳🇱", flagcdn: "nl", count: 20 },
+            { code: "JPN", name: "Japón", flag: "🇯🇵", flagcdn: "jp", count: 20 },
+            { code: "SWE", name: "Suecia", flag: "🇸🇪", flagcdn: "se", count: 20 },
+            { code: "TUN", name: "Túnez", flag: "🇹🇳", flagcdn: "tn", count: 20 },
+            { code: "BEL", name: "Bélgica", flag: "🇧🇪", flagcdn: "be", count: 20 },
+            { code: "EGY", name: "Egipto", flag: "🇪🇬", flagcdn: "eg", count: 20 },
+            { code: "IRN", name: "Irán", flag: "🇮🇷", flagcdn: "ir", count: 20 },
+            { code: "NZL", name: "Nueva Zelanda", flag: "🇳🇿", flagcdn: "nz", count: 20 },
+            { code: "ESP", name: "España", flag: "🇪🇸", flagcdn: "es", count: 20 },
+            { code: "CPV", name: "Cabo Verde", flag: "🇨🇻", flagcdn: "cv", count: 20 },
+            { code: "KSA", name: "Arabia Saudita", flag: "🇸🇦", flagcdn: "sa", count: 20 },
+            { code: "URU", name: "Uruguay", flag: "🇺🇾", flagcdn: "uy", count: 20 },
+            { code: "FRA", name: "Francia", flag: "🇫🇷", flagcdn: "fr", count: 20 },
+            { code: "SEN", name: "Senegal", flag: "🇸🇳", flagcdn: "sn", count: 20 },
+            { code: "IRQ", name: "Irak", flag: "🇮🇶", flagcdn: "iq", count: 20 },
+            { code: "NOR", name: "Noruega", flag: "🇳🇴", flagcdn: "no", count: 20 },
+            { code: "ARG", name: "Argentina", flag: "🇦🇷", flagcdn: "ar", count: 20 },
+            { code: "ALG", name: "Argelia", flag: "🇩🇿", flagcdn: "dz", count: 20 },
+            { code: "AUT", name: "Austria", flag: "🇦🇹", flagcdn: "at", count: 20 },
+            { code: "JOR", name: "Jordania", flag: "🇯🇴", flagcdn: "jo", count: 20 },
+            { code: "POR", name: "Portugal", flag: "🇵🇹", flagcdn: "pt", count: 20 },
+            { code: "COD", name: "R.D. Congo", flag: "🇨🇩", flagcdn: "cd", count: 20 },
+            { code: "UZB", name: "Uzbekistán", flag: "🇺🇿", flagcdn: "uz", count: 20 },
+            { code: "COL", name: "Colombia", flag: "🇨🇴", flagcdn: "co", count: 20 },
+            { code: "ENG", name: "Inglaterra", flag: "🏴", flagcdn: "gb-eng", count: 20 },
+            { code: "CRO", name: "Croacia", flag: "🇭🇷", flagcdn: "hr", count: 20 },
+            { code: "GHA", name: "Ghana", flag: "🇬🇭", flagcdn: "gh", count: 20 },
+            { code: "PAN", name: "Panamá", flag: "🇵🇦", flagcdn: "pa", count: 20 },
+            { code: "CC", name: "Coca-Cola", flag: "🥤", flagcdn: "cc", count: 12 }
         ];
+
+        // BASE DE DATOS DE TUS 196 FALTANTES (ESTRICTA)
+        const MISSING_LIST = {
+            FWC: [4, 5, 6, 13], RSA: [16, 19], KOR: [6, 15, 18],
+            CZE: [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], CAN: [3],
+            BIH: [1, 2, 4, 5, 6, 8, 9, 11, 13, 14, 15, 17, 18, 19, 20], SUI: [13, 19], BRA: [11, 16, 20],
+            MAR: [5, 9, 12], HAI: [10, 11], SCO: [5, 10, 13, 14], USA: [1, 18], PAR: [6], AUS: [6, 18],
+            TUR: [1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20], GER: [12], CUW: [12],
+            CIV: [3, 4], ECU: [18], NED: [5, 17, 19], JPN: [18],
+            SWE: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20], TUN: [6], BEL: [6, 19],
+            EGY: [16, 18], IRN: [10], NZL: [7], ESP: [16], CPV: [13, 14, 19], KSA: [10], FRA: [19, 20],
+            SEN: [14, 17, 20], IRQ: [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 20],
+            NOR: [6, 14, 19], ARG: [8, 18], ALG: [2, 7, 8, 17], AUT: [12],
+            JOR: [3, 7, 8, 10, 11, 12, 16, 17, 20], POR: [3, 4],
+            COD: [2, 3, 4, 5, 6, 7, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20], UZB: [5, 14, 17], COL: [5, 17, 18],
+            ENG: [13], CRO: [9, 12, 14, 16, 19], GHA: [3, 11, 16], PAN: [4, 9, 12],
+            CC: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+        };
+
+        // BASE DE DATOS DE TUS REPETIDAS (ESTRICTA - DEPURADA DE CONFLICTOS)
+        const REPEATED_LIST = {
+            FWC: [2, 3, 9, 10, 12, 14], MEX: [5, 6, 11, 16, 19], RSA: [6, 11], KOR: [1, 11, 12, 14, 20],
+            CAN: [2, 4, 11, 14], QAT: [3, 6, 17, 19], SUI: [3, 5, 6, 14, 16], BRA: [5, 6, 19], MAR: [11, 13, 15],
+            HAI: [2, 3, 7, 12, 13, 14, 15, 16], SCO: [2, 7], USA: [4, 8, 9, 13, 14, 15, 19, 20],
+            PAR: [4, 9, 10, 11, 13, 18], AUS: [3, 7, 11, 13, 16, 19, 20], GER: [4, 9, 10, 11, 13, 18],
+            CUW: [5, 19], CIV: [14], ECU: [7, 9, 19], NED: [8, 9, 13], JPN: [1, 9, 14],
+            TUN: [2, 8, 11, 12, 15, 20], BEL: [1, 5, 9, 16, 17], EGY: [1, 2, 3, 6, 7, 15],
+            IRN: [1, 2, 5, 6, 15, 20], NZL: [1, 11, 14], CPV: [1, 15, 18, 20], KSA: [9, 11, 12, 13, 15],
+            URU: [6, 8, 15, 16], FRA: [2, 6, 14, 17], SEN: [2, 3, 10, 15, 19],
+            NOR: [2, 3, 4, 8, 10, 15, 16, 17, 18], ARG: [3, 5, 12, 14], ALG: [4, 5, 9, 14, 19],
+            AUT: [1, 8, 14, 15], JOR: [19], POR: [6, 8, 12, 18], UZB: [3, 4, 9, 15, 20],
+            COL: [1, 4, 8, 10, 19, 20], ENG: [1, 2, 4, 7, 10, 11, 18, 20], CRO: [1, 2, 5, 7],
+            GHA: [6, 8], PAN: [3, 5, 8, 11, 13, 15, 17, 18]
+        };
 
         const APP_ID = "miranda-tracker-v10-prod";
 
+        // Función de generación nativa auto-alimentada
         const generateInitialStickers = () => {
             const initial = [];
             SECTION_LIST.forEach(section => {
+                const code = section.code;
+                const missingNums = MISSING_LIST[code] || [];
+                const repeatedNums = REPEATED_LIST[code] || [];
                 for (let i = 1; i <= section.count; i++) {
-                    initial.push({ id: `${section.code}${i}`, code: section.code, num: i, count: 0 });
+                    let count = 1; // Por defecto obtenida
+                    if (missingNums.includes(i)) {
+                        count = 0;
+                    } else if (repeatedNums.includes(i)) {
+                        count = 2; // Repetida por defecto (1 álbum + 1 extra)
+                    }
+                    initial.push({ id: `${code}${i}`, code, num: i, count });
                 }
             });
             return initial;
@@ -229,6 +273,7 @@
                 setLogs(prev => [...prev.slice(-8), `[${new Date().toLocaleTimeString()}] ${msg}`]);
             };
 
+            // DEFINICIÓN DE COPIADO DE SEGURIDAD EN LA NUBE
             const pushToCloud = async (newStickers, newName = collectorName) => {
                 if (!syncCode || !dbInstance.current) return;
                 
@@ -280,6 +325,7 @@
                 }
             }, [showSettings]);
 
+            // Sincronización de Firebase
             useEffect(() => {
                 const initFirebase = () => {
                     addLog("Conectando con base de datos...");
@@ -306,6 +352,7 @@
                 initFirebase();
             }, []);
 
+            // Escuchar cambios de Firestore en tiempo real (Lectura con Resolutor de Conflictos)
             const startRealTimeListener = (appId, cleanCode) => {
                 if (unsubscribeFirestore.current) unsubscribeFirestore.current();
                 
@@ -333,7 +380,7 @@
 
                             if (isFirstLoad) {
                                 isFirstLoad = false;
-                                // En el arranque, validamos si existe un conflicto real de versiones
+                                // En el arranque, validamos si existe un conflicto de versiones
                                 if (localOwned > cloudOwned && cloudOwned > 0 && localOwned !== 992) {
                                     setConflictState({
                                         show: true,
@@ -342,7 +389,7 @@
                                         cloudData: cloudStickers,
                                         localData: localStickers
                                     });
-                                    addLog(`¡Conflicto detectado! Local: ${localOwned} un. vs Nube: ${cloudOwned} un.`);
+                                    addLog(`¡Conflicto detectado al arrancar! Local: ${localOwned} un. vs Nube: ${cloudOwned} un.`);
                                 } else {
                                     setStickers(cloudStickers);
                                     addLog(`Sincronizado con la nube (${cloudOwned} estampas).`);
@@ -353,11 +400,12 @@
                             setCloudStatus('syncing');
                         }
                     } else {
+                        // Si la nube está vacía pero el local tiene datos, la respaldamos de inmediato
                         const localStickers = stickersRef.current;
                         const localOwned = localStickers.filter(s => s.count > 0).length;
                         if (localOwned > 0) {
                             pushToCloud(localStickers);
-                            addLog("Nube vacía. Subiendo progreso de respaldo...");
+                            addLog("Nube vacía. Subiendo progreso actual de respaldo...");
                         }
                     }
                 }, (err) => {
@@ -367,13 +415,12 @@
                 });
             };
 
+            // RESOLUTOR MANUAL DE CONFLICTOS
             const resolveConflict = async (useLocal) => {
                 addLog(`Resolviendo conflicto: Seleccionado ${useLocal ? 'Local' : 'Nube'}`);
                 
-                // Guardamos los datos seleccionados
                 const targetStickers = useLocal ? conflictState.localData : conflictState.cloudData;
                 
-                // Cerramos la ventana emergente al instante para dar respuesta visual inmediata
                 setConflictState({ show: false, localCount: 0, cloudCount: 0, cloudData: null, localData: null });
                 
                 if (targetStickers) {
@@ -394,6 +441,7 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
+            // Escaneo Profundo de LocalStorage para buscar claves legacy
             const scanAllLocalStorage = () => {
                 const backups = [];
                 for (let i = 0; i < localStorage.length; i++) {
@@ -424,6 +472,7 @@
                 return backups;
             };
 
+            // Escaneo Profundo de Firestore buscando en todas las cajitas y códigos posibles (Agresivo)
             const scanFirestoreBackups = async (codes) => {
                 const pathsToTry = ['miranda-tracker-prod-app', 'miranda-tracker-app', 'miranda-tracker-prod', 'default-app-id'];
                 const foundBackups = [];
@@ -468,10 +517,12 @@
                 return foundBackups;
             };
 
+            // Ejecutar el Escáner de Recuperación Familiar al Inicio o cambio de código
             const runFullRecoveryScan = async () => {
                 addLog("Iniciando escáner de recuperación...");
                 const localBackups = scanAllLocalStorage();
                 
+                // Generar lista de códigos potenciales a buscar
                 const codesToScan = [
                     syncCode,
                     inputSyncCode,
@@ -490,6 +541,7 @@
                     const cloudBackups = await scanFirestoreBackups(codesToScan);
                     const combined = [...localBackups, ...cloudBackups];
                     
+                    // Remover duplicados por conteo idéntico
                     const seen = new Set();
                     const unique = combined.filter(b => {
                         const key = `${b.type}-${b.ownedCount}-${b.repeatedCount}`;
@@ -501,9 +553,7 @@
                     setAllBackups(unique);
                     addLog(`Búsqueda completa: ¡Halladas ${unique.length} copias con datos!`);
                     
-                    // Abrimos el modal para que el usuario elija
-                    setShowRecoveryModal(true);
-
+                    // Si encontramos una versión en la nube con datos que sea la mejor, proponerla
                     const cloudBest = unique.find(b => b.type === 'cloud' && b.ownedCount > 0);
                     if (cloudBest && stickers.filter(s => s.count > 0).length === 0) {
                         addLog(`Autocargando mejor copia de seguridad desde: ${cloudBest.source}`);
@@ -514,10 +564,10 @@
                 } catch (e) {
                     setAllBackups(localBackups);
                     addLog("Recuperación completa basada solo en copias locales.");
-                    setShowRecoveryModal(true);
                 }
             };
 
+            // DESCARGA MANUAL DE EMERGENCIA (Ignora el escudo de seguridad)
             const forceDownloadFromCloud = async () => {
                 const targetCode = syncCode || inputSyncCode || 'MIRANDA26';
                 const cleanCode = targetCode.trim().toUpperCase();
@@ -559,35 +609,30 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
+            // Renderizado seguro de banderas en la interfaz web (Usa FlagCDN para compatibilidad completa)
             const renderFlagImg = (sectionCode, emojiFallback, className = "w-5 h-4 inline-block object-cover rounded shadow-sm mr-2") => {
                 const section = SECTION_LIST.find(s => s.code === sectionCode);
                 if (!section) return emojiFallback;
                 
+                // Elementos especiales que no son países en FlagCDN
                 if (sectionCode === 'FWC' || sectionCode === 'CC') {
                     return <span className="inline-block mr-2 text-sm leading-none">{section.flag}</span>;
                 }
                 
-                const codeMap = {
-                    "MEX": "mx", "RSA": "za", "KOR": "kr", "CZE": "cz", "CAN": "ca", "BIH": "ba", "QAT": "qa", "SUI": "ch", "BRA": "br", "MAR": "ma", "HAI": "ht",
-                    "SCO": "gb-sct", "USA": "us", "PAR": "py", "AUS": "au", "TUR": "tr", "GER": "de", "CUW": "cw", "CIV": "ci", "ECU": "ec", "NED": "nl", "JPN": "jp",
-                    "SWE": "se", "TUN": "tn", "BEL": "be", "EGY": "eg", "IRN": "ir", "NZL": "nz", "ESP": "es", "CPV": "cv", "KSA": "sa", "URU": "uy", "FRA": "fr",
-                    "SEN": "sn", "IRQ": "iq", "NOR": "no", "ARG": "ar", "ALG": "dz", "AUT": "at", "JOR": "jo", "POR": "pt", "COD": "cd", "UZB": "uz", "COL": "co",
-                    "ENG": "gb-eng", "CRO": "hr", "GHA": "gh", "PAN": "pa"
-                };
-                const isoCode = codeMap[sectionCode];
-                if (!isoCode) return <span className="inline-block mr-2 text-sm leading-none">{section.flag}</span>;
+                // Mostrar hermosa bandera SVG de FlagCDN con fallback
                 return (
                     <img 
-                        src={`https://flagcdn.com/w40/${isoCode}.png`} 
+                        src={`https://flagcdn.com/w40/${section.flagcdn}.png`} 
                         alt={section.name} 
                         className={className}
                         onError={(e) => {
-                            e.target.style.display = 'none';
+                            e.target.style.display = 'none'; // Fallback silencioso si hay algún error
                         }}
                     />
                 );
             };
 
+            // Inicializar escáner cuando Firebase esté listo
             useEffect(() => {
                 if (dbInstance.current) {
                     runFullRecoveryScan();
@@ -621,11 +666,22 @@
 
                 const completedCount = sectionsData.filter(s => s.isDone).length;
 
+                // Cálculo de Estrategia de Compra
                 const ratioOwned = ownedCount / total;
                 const probNew = (1 - Math.pow(ratioOwned, 5)) * 100;
 
                 return { total, ownedCount, repeatedCount, progress, completedCount, sectionsData, probNew };
             }, [stickers]);
+
+            // Deducir si existe una copia de seguridad con más estampas que la actual (Ignorar si el local es 100% erróneo)
+            const betterBackups = useMemo(() => {
+                const currentOwned = stickers.filter(s => s.count > 0).length;
+                if (currentOwned === 992) {
+                    // Si el iPad marca 100% erróneo, mostramos cualquier copia que tenga progreso real menor a 992 pero mayor a 0
+                    return allBackups.filter(b => b.ownedCount < 992 && b.ownedCount > 0);
+                }
+                return allBackups.filter(b => b.ownedCount > currentOwned);
+            }, [allBackups, stickers]);
 
             const updateCount = (id, delta) => {
                 const next = stickers.map(s => s.id === id ? { ...s, count: Math.max(0, s.count + delta) } : s);
@@ -633,6 +689,7 @@
                 if (syncCode) pushToCloud(next);
             };
 
+            // Guarda los ajustes del Modal de forma manual
             const handleSaveConfig = () => {
                 const cleanCode = inputSyncCode.trim().toUpperCase();
                 setSyncCode(cleanCode);
@@ -641,6 +698,7 @@
                 localStorage.setItem('panini_sync_code', cleanCode);
                 localStorage.setItem('panini_collector_name', inputCollectorName);
                 
+                // Actualizar historial local de códigos
                 setSyncHistory(prev => {
                     const next = [cleanCode, ...prev.filter(x => x !== cleanCode)].slice(0, 5);
                     localStorage.setItem('panini_sync_history', JSON.stringify(next));
@@ -652,6 +710,7 @@
                 setTimeout(() => setNotification(null), 3000);
             };
 
+            // Buscar datos de un amigo para comparar (Matchmaker cruzado robusto)
             const checkFriendSync = async () => {
                 if (!dbInstance.current || !friendCode) return;
                 const cleanFriendCode = friendCode.trim().toUpperCase();
@@ -761,6 +820,7 @@
                 reader.readAsText(file);
             };
 
+            // Filtrado de las selecciones en el Dashboard
             const filteredDashboardSections = useMemo(() => {
                 return stats.sectionsData.filter(s => {
                     if (dashboardFilter === 'pending') return !s.isDone;
@@ -769,6 +829,7 @@
                 });
             }, [stats.sectionsData, dashboardFilter]);
 
+            // Filtrado de estampas en el Álbum con subfiltros inteligentes
             const displayedStickers = useMemo(() => {
                 let list = stickers;
                 if (!filter) {
@@ -778,6 +839,7 @@
                     list = stickers.filter(s => s.id.includes(search));
                 }
 
+                // Aplicar filtros adicionales de álbum
                 if (albumSubFilter === 'missing') return list.filter(s => s.count === 0);
                 if (albumSubFilter === 'repeated') return list.filter(s => s.count > 1);
                 return list;
@@ -815,6 +877,28 @@
                     )}
 
                     <main className="max-w-4xl mx-auto p-4 space-y-6">
+                        
+                        {/* BANNER INTERACTIVO DE AUTORECUPERACIÓN */}
+                        {betterBackups.length > 0 && (
+                            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 text-white p-5 rounded-[2rem] shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 animate-in slide-in-from-top duration-500">
+                                <div className="flex items-center gap-4 text-center md:text-left">
+                                    <div className="bg-white/20 p-3 rounded-2xl animate-pulse">
+                                        <Icon name="search" size={28} className="text-yellow-200" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-sm uppercase tracking-wider">¡Detectamos copias con tu progreso!</h4>
+                                        <p className="text-[11px] text-orange-100 font-semibold mt-0.5">Encontramos copias de seguridad de Miranda/Mateo con progreso real para tu iPad.</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setShowRecoveryModal(true)} 
+                                    className="bg-white text-orange-700 px-6 py-3 rounded-2xl text-[11px] font-black uppercase shadow-lg hover:bg-slate-50 transition-all w-full md:w-auto"
+                                >
+                                    Ver y Restaurar
+                                </button>
+                            </div>
+                        )}
+
                         <nav className="flex bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border p-1 sticky top-28 z-40">
                             {[
                                 { id: 'dashboard', label: 'Resumen', icon: 'trending-up' },
@@ -1235,7 +1319,7 @@
                         </div>
                     )}
 
-                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS (Sólo para backups reales) */}
+                    {/* MODAL DEL CENTRO DE RECUPERACIÓN DE ESTAMPAS */}
                     {showRecoveryModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
                             <div className="bg-white rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl space-y-6 card-enter">
@@ -1324,7 +1408,7 @@
                                     {/* Opción A: Mantener y subir local (por ejemplo el 82% de Miranda) */}
                                     <button 
                                         onClick={() => resolveConflict(true)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all space-y-1 group cursor-pointer active:scale-95 block"
+                                        className="w-full text-left p-4 rounded-2xl border-2 border-blue-500 hover:bg-blue-50/50 transition-all space-y-1 group"
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-sm text-blue-700">Usar progreso del dispositivo</span>
@@ -1333,10 +1417,10 @@
                                         <p className="text-xs text-slate-500 font-medium">Llevar las <b className="text-slate-800">{conflictState.localCount} estampas</b> de este dispositivo a la nube para actualizar a todos los demás.</p>
                                     </button>
 
-                                    {/* Opción B: Descargar de la nube */}
+                                    {/* Opción B: Descargar de la nube (el 70.1% de Marco) */}
                                     <button 
                                         onClick={() => resolveConflict(false)}
-                                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-300 hover:bg-slate-50 transition-all space-y-1 cursor-pointer active:scale-95 block"
+                                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-amber-300 hover:bg-slate-50 transition-all space-y-1"
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-extrabold text-sm text-slate-700">Descargar de la Nube</span>
